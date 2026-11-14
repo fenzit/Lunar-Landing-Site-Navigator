@@ -13,6 +13,7 @@ import { terrainGeometry } from './terrain-mesh.mjs';
 const rad=Math.PI/180;
 export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=createRockField}) {
   let site,data,initial,initialLandscape,landscape,request,landscapeRequest,enabled=false;
+  let descent=false;
   let keys=new Set(),last=0,frame=0,heading=25*rad,viewPitch=-5,overview=false,walkingPosition=null;
   let lightPending=true,landscapePending=false,loadError=null,blocked=false,streamState={loading:false,error:null};
   const $=selector=>document.querySelector(selector);
@@ -51,7 +52,7 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
   }
   function updateLander() {
     if(!data||!initial) return;
-    const anchor=destination(site,5,8),offset=surfaceOffset(data.site,anchor);
+    const anchor=descent?site:destination(site,5,8),offset=surfaceOffset(data.site,anchor);
     const distance=Math.hypot(offset.east-ground.camera.position.x,-offset.north-ground.camera.position.z);
     ground.lander.visible=distance<2500;
     if(!ground.lander.visible) {ground.lander.userData.obstacles=[];return;}
@@ -59,7 +60,7 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
     placeLander(ground.lander,(x,z)=>heightFrom(initial,x,z),{x:offset.east,z:-offset.north,yaw:(direction.azimuth-180)*rad});
   }
   function updateDetails(force=false) {
-    if(!data||overview) return;
+    if(!data||overview||descent) return;
     details.update(coordinates(),data.site,localHeight,{force,clearance:ground.lander.visible?ground.lander.position:null});
   }
   function obstacles() {return [...(ground.lander.userData.obstacles??[]),...details.obstacles()];}
@@ -137,7 +138,7 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
     updateDetails();stream.update(coordinates());localize();draw();frame=requestAnimationFrame(walk);
   }
   canvas.addEventListener('keydown',event=>{
-    if(!enabled||overview||!['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight'].includes(event.code)) return;
+    if(!enabled||overview||descent||!['KeyW','KeyA','KeyS','KeyD','ShiftLeft','ShiftRight'].includes(event.code)) return;
     event.preventDefault();keys.add(event.code);if(!frame) frame=requestAnimationFrame(walk);
   });
   canvas.addEventListener('keyup',event=>keys.delete(event.code));canvas.addEventListener('blur',stop);window.addEventListener('blur',stop);
@@ -166,12 +167,15 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
     if(!enabled||!overview) return;event.preventDefault();const scale=event.deltaY>0?1.12:.89;
     if(ground.camera.position.length()*scale>600&&ground.camera.position.length()*scale<15000) {ground.camera.position.multiplyScalar(scale);draw();}
   },{passive:false});
-  $('#surface-reset').addEventListener('click',()=>{
+  function resetWalking() {
     if(!initial) return;stop();landscapeRequest?.abort();landscapeRequest=null;landscapePending=false;loadError=null;
     overview=false;walkingPosition=null;data=initial;landscape=initialLandscape;blocked=false;stream.reset(initial);
     ground.camera.position.set(0,localHeight(0,0)+1.7,0);overviewButton.setAttribute('aria-pressed','false');
     buildTerrain();updateLander();updateDetails(true);settleCamera();walking.forEach(button=>{button.disabled=false;});
-    heading=25*rad;viewPitch=-5;aim(25,-5);localize();draw();canvas.focus();if(!landscape) loadLandscape(data);
+    heading=25*rad;viewPitch=-5;aim(25,-5);localize();draw();if(!landscape) loadLandscape(data);
+  }
+  $('#surface-reset').addEventListener('click',()=>{
+    resetWalking();canvas.focus();
   });
   retry.addEventListener('click',()=>{if(!data) load();else {stream.retry();if(loadError) {loadError=null;loadLandscape(data);}}});
   here.addEventListener('click',()=>{if(!data||overview) return;const point=coordinates();moved({lat:Number(point.lat.toFixed(6)),lon:Number(point.lon.toFixed(6))});});
@@ -189,7 +193,15 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
       stop();clearTerrain();details.clear();ground.lander.visible=false;ground.lander.userData.obstacles=[];here.disabled=true;
       walking.forEach(button=>{button.disabled=true;});position.textContent='';aim(25,-5);load();
     },
-    show(value) {enabled=value;if(value) {if(data) stream.update(coordinates());else load();}else {stop();if(overview) returnToGround();stream.update(coordinates(),{paused:true});}},
+    show(value, replay=false) {
+      enabled=value;
+      if (descent!==replay) {
+        descent=replay;
+        resetWalking();
+      }
+      if(value) {if(data) stream.update(coordinates(),{paused:descent});else load();}
+      else {stop();if(overview) returnToGround();stream.update(coordinates(),{paused:true});}
+    },
     localAngles(value) {
       if(!value||!data) return value;const result={...value};
       for(const body of ['sun','earth']) {const angle=changeDirection(value[body+'Az'],value[body+'El'],site,data.site);result[body+'Az']=angle.azimuth;result[body+'El']=angle.elevation;}
@@ -198,7 +210,7 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
     update(angles,yaw,pitch) {
       heading=yaw*rad;viewPitch=pitch;
       if(lightPending===Boolean(angles)) {lightPending=!angles;localize();}
-      const target=overview?new THREE.Vector3(0,0,0):ground.camera.position;
+      const target=overview||descent?new THREE.Vector3(0,0,0):ground.camera.position;
       if(angles) {
         const az=angles.sunAz*rad,el=angles.sunEl*rad;
         ground.light.position.set(Math.cos(el)*Math.sin(az)*2000,Math.sin(el)*2000,-Math.cos(el)*Math.cos(az)*2000).add(target);

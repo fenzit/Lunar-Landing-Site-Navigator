@@ -16,6 +16,7 @@ const mobile = matchMedia("(max-width: 760px)");
 const viewInfo = {
   globe: ["CAM 01", "globeCaption"],
   ground: ["CAM 02", "groundCaption"],
+  descent: ["CAM 04", "descentCaption"],
   chart: ["CAM 03", "chartCaption"],
 };
 const sourceKeys = { demo: "saved", cache: "cached", live: "live" };
@@ -168,6 +169,7 @@ function selectSite(next, kind, focus = true) {
 }
 
 function resetAnalysis() {
+  if (view === "descent") showView("ground");
   stopPlayback();
   request?.abort();
   compareRequest?.abort();
@@ -306,6 +308,7 @@ async function loadAnalysis(url, keepTime = null) {
     for(const [key,value] of Object.entries(edits)) field(key).value=value;
     renderAnalysis(data, keepTime);
     status(sourceKeys[data.source.mode]);
+    return true;
   } catch (error) {
     if (id === requestId) statusRequestError(error);
   }
@@ -335,7 +338,10 @@ function pickSite(coords) {
 
 async function showView(next) {
   view = next;
-  $(".experience").dataset.view = view;
+  const experience = $(".experience");
+  experience.dataset.view = view === "descent" ? "ground" : view;
+  experience.classList.toggle("descent-mode", view === "descent");
+  $("#descent-tools").hidden = view !== "descent";
   $("#view-number").textContent = viewInfo[view][0];
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#main-plot").hidden = view !== "chart";
@@ -344,7 +350,7 @@ async function showView(next) {
   $("#surface-details").hidden = view !== "ground";
   renderSky();
   showSceneMessage(null);
-  for (const button of document.querySelectorAll("[data-view]")) {
+  for (const button of document.querySelectorAll("button[data-view]")) {
     button.setAttribute("aria-pressed", String(button.dataset.view === view));
   }
   if (view === "chart") {
@@ -362,11 +368,12 @@ async function showView(next) {
       renderSite(true);
       renderer.setAngles(currentAngles);
     }
-    renderer.show(view);
+    renderer.show(view, view === "descent" ? analysis.samples[0] : undefined);
     renderSky();
   } catch {
     showSceneMessage("no3d");
     $("#map-tools").hidden = $("#surface-details").hidden = true;
+    $("#descent-tools").hidden = true;
     $("#globe-source").hidden = true;
   }
 }
@@ -458,11 +465,19 @@ async function init() {
     loadAnalysis(`/api/demo/${preset.id}?receiver_height_m=${field('receiver').value}`);
   });
   $("#odysseus-replay-source").href = odysseus.url;
-  $("#odysseus-replay").addEventListener("click", () => {
+  $("#odysseus-replay").addEventListener("click", async () => {
     if (!field("required").reportValidity() || !field("receiver").reportValidity()) return;
     selectSite(odysseus, odysseus.id);
     fillPeriod(odysseusReplay);
-    loadAnalysis(queryUrl(odysseus.lat, odysseus.lon, odysseusReplay.start, odysseusReplay.hours));
+    if (await loadAnalysis(queryUrl(odysseus.lat, odysseus.lon, odysseusReplay.start, odysseusReplay.hours))) {
+      document.querySelector("#interface").scrollIntoView();
+      await showView("descent");
+      $("#viewport canvas")?.focus({ preventScroll: true });
+    }
+  });
+  $("#descent-exit").addEventListener("click", async () => {
+    await showView("ground");
+    $("#viewport canvas")?.focus({ preventScroll: true });
   });
   $("#compare").addEventListener("click", compare);
   field("receiver").addEventListener("input", updateVisibilityMap);
@@ -484,7 +499,7 @@ async function init() {
     event.currentTarget.setAttribute("aria-expanded", String(open));
     $("#conditions-panel").classList.toggle("open", open);
   });
-  for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
+  for (const button of document.querySelectorAll("button[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
   const surfaceDetailsToggle = $("#surface-details-toggle");
   const surfaceTools = $("#sky-tools");
   surfaceDetailsToggle.addEventListener("click", () => {

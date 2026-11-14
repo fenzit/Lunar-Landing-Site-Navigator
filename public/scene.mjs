@@ -8,6 +8,7 @@ import { createSun } from "./sun.mjs";
 import { t } from "./i18n.mjs";
 import { createSurface } from './surface.mjs';
 import { createLander, landerOccludes } from './lander.mjs';
+import { createDescent } from "./descent.mjs";
 
 const rad = Math.PI / 180;
 const relief = 3;
@@ -147,7 +148,12 @@ export function createScene(root, { pick, message, moved }) {
   const axis = new THREE.Vector3(0, 1, 0);
   const markerWorld = new THREE.Vector3();
   const ground = makeGround();
-  const surfaceView=createSurface(ground,canvas,{message:key=>{if(view==='ground') message(key);},draw:()=>{if(view==='ground') render();},aim:(az,el)=>{faceTarget=null;yaw=az;pitch=el;},moved});
+  const descent = createDescent(ground.camera, ground.lander, canvas, startAnimation);
+  const surfaceView=createSurface(ground,canvas,{
+    message:key=>{if(view==="ground"||view==="descent") message(key);},
+    draw:()=>{if(view==="descent") descent.start();if(view==="ground"||view==="descent") render();},
+    aim:(az,el)=>{faceTarget=null;yaw=az;pitch=el;},moved,
+  });
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
@@ -157,6 +163,7 @@ export function createScene(root, { pick, message, moved }) {
   lunarFrame.add(markers);
   const ray = new THREE.Raycaster();
   let globe, surface, slopeMap, loading, selected, angles, sky, view = "chart";
+  let descentAngles;
   let frame = 0, yaw = 0, pitch = 0, faceTarget = null, slopeEnabled = false;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let animated = !reducedMotion.matches, seconds = 0, lastFrame = 0, flight = null, focusBody = "system";
@@ -237,7 +244,7 @@ export function createScene(root, { pick, message, moved }) {
   }
 
   function updateGround() {
-    const localAngles=surfaceView.localAngles(angles);
+    const localAngles=surfaceView.localAngles(view==="descent"?descentAngles:angles);
     for (const key of ["sun", "earth"]) {
       const object = ground.objects[key];
       const elevation = localAngles?.[`${key}El`];
@@ -250,7 +257,7 @@ export function createScene(root, { pick, message, moved }) {
       yaw = localAngles[`${faceTarget}Az`];
       pitch = THREE.MathUtils.clamp(localAngles[`${faceTarget}El`]*.6,-45,75);
     }
-    ground.camera.lookAt(ground.camera.position.clone().add(vector(skyDirection(yaw, pitch))));
+    if (view==="ground") ground.camera.lookAt(ground.camera.position.clone().add(vector(skyDirection(yaw, pitch))));
     surfaceView.update(localAngles,yaw,pitch);
   }
 
@@ -331,8 +338,9 @@ export function createScene(root, { pick, message, moved }) {
       if (t === 1) flight = null;
     }
     if(view==='globe') controls.update(dt);
+    if(view==="descent") descent.advance(dt);
     render();
-    if (animated || (view==='globe'&&(controls.autoRotate || flight))) frame = requestAnimationFrame(animate);
+    if (animated || (view==="descent" && descent.moving()) || (view==='globe'&&(controls.autoRotate || flight))) frame = requestAnimationFrame(animate);
     else lastFrame = 0;
   }
 
@@ -392,16 +400,19 @@ export function createScene(root, { pick, message, moved }) {
     if (!event.isPrimary || event.button !== 0) { pointer = null; return; }
     pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false };
     canvas.focus({preventScroll:true});
-    if (view === "ground") canvas.setPointerCapture(event.pointerId);
+    if (view === "ground" || view === "descent") canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove", event => {
     if (pointer?.id !== event.pointerId) return;
     const dx = event.clientX - pointer.x, dy = event.clientY - pointer.y;
     if (Math.hypot(dx, dy) > 5) pointer.dragged = true;
-    if (view === "ground" && pointer.dragged) {
-      faceTarget = null;
-      yaw -= dx * .21;
-      pitch = THREE.MathUtils.clamp(pitch + dy * .17, -80, 85);
+    if ((view === "ground" || view === "descent") && pointer.dragged) {
+      if (view === "descent") descent.look(dx * .21 * rad, -dy * .17 * rad);
+      else {
+        faceTarget = null;
+        yaw -= dx * .21;
+        pitch = THREE.MathUtils.clamp(pitch + dy * .17, -80, 85);
+      }
       pointer.x = event.clientX;
       pointer.y = event.clientY;
       render();
@@ -429,6 +440,9 @@ export function createScene(root, { pick, message, moved }) {
       else return;
       camera.position.setFromSpherical(spherical.makeSafe()).add(controls.target);
       controls.update();
+    } else if (view === "descent" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
+      descent.look(event.key === "ArrowLeft" ? -0.13 : event.key === "ArrowRight" ? 0.13 : 0,
+        event.key === "ArrowUp" ? 0.1 : event.key === "ArrowDown" ? -0.1 : 0);
     } else if (view === "ground" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
       faceTarget = null;
       yaw += event.key === "ArrowLeft" ? -9 : event.key === "ArrowRight" ? 9 : 0;
@@ -439,13 +453,15 @@ export function createScene(root, { pick, message, moved }) {
   });
 
   return {
-    show(next) {
+    show(next, touchdownAngles) {
       view = next;
-      canvas.setAttribute('aria-label',t(view==='ground'?'surfaceSceneLabel':'sceneLabel'));
+      descentAngles = touchdownAngles;
+      descent.show(view==="descent");
+      canvas.setAttribute('aria-label',t(view==="descent"?"descentControls":view==='ground'?'surfaceSceneLabel':'sceneLabel'));
       for (const label of [...labels, pickedLabel, moonLabel, ...Object.values(skyLabels),
         ...Object.values(bodies).map(body => body.label)]) label.hidden = true;
       controls.enabled = view === "globe";
-      surfaceView.show(view==='ground');
+      surfaceView.show(view==='ground'||view==="descent",view==="descent");
       if (view === "globe" && !loading) loading = loadGlobe();
       if (view === "ground") {
         faceTarget = null;
@@ -473,7 +489,8 @@ export function createScene(root, { pick, message, moved }) {
     localize() {
       surfaceView.localize();
       moonLabel.textContent = t("moon");
-      canvas.setAttribute("aria-label", t(view==='ground'?'surfaceSceneLabel':'sceneLabel'));
+      canvas.setAttribute("aria-label", t(view==="descent"?"descentControls":view==='ground'?'surfaceSceneLabel':'sceneLabel'));
+      descent.localize();
       for (const [key, label] of Object.entries(skyLabels)) label.textContent = t(key);
       render();
     },
