@@ -1,4 +1,5 @@
 import * as THREE from 'three';
+import { RoundedBoxGeometry } from 'three/addons/geometries/RoundedBoxGeometry.js';
 
 const labelRay=new THREE.Ray(),labelInverse=new THREE.Matrix4(),labelHit=new THREE.Vector3();
 const hullBounds=new THREE.Box3(new THREE.Vector3(-.95,.88,-.95),new THREE.Vector3(.95,2.35,1.02));
@@ -93,35 +94,70 @@ export function createLander() {
   }
   function bar(a,b,radius,material=silver,parent=lander) {
     const from=new THREE.Vector3(...a),to=new THREE.Vector3(...b);
-    const object=mesh(new THREE.CylinderGeometry(radius,radius,from.distanceTo(to),8),material,[0,0,0],parent);
+    const object=mesh(new THREE.CylinderGeometry(radius,radius,from.distanceTo(to),16),material,[0,0,0],parent);
     object.position.copy(from).add(to).multiplyScalar(.5);
     object.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),to.sub(from).normalize());return object;
   }
-  mesh(new THREE.CylinderGeometry(.82,.9,1.05,8),foil,[0,1.47,0]);
-  mesh(new THREE.CylinderGeometry(.88,.88,.09,8),silver,[0,2.04,0]);
-  mesh(new THREE.CylinderGeometry(.94,.94,.1,8),dark,[0,.94,0]);
-  mesh(new THREE.BoxGeometry(.82,.27,.7),white,[0,2.2,0]);
-  // Engine bell, plumbing and heat shield.
-  mesh(new THREE.CylinderGeometry(.17,.36,.48,24,1,true),silver,[0,.65,0]);
-  mesh(new THREE.CylinderGeometry(.31,.31,.018,24),dark,[0,.402,0]);
-  const rim=mesh(new THREE.TorusGeometry(.35,.022,8,32),dark,[0,.41,0]);rim.rotation.x=Math.PI/2;
+  const busProfile = [[0,.92],[.85,.92],[.91,.96],[.91,1.02],[.85,1.94],[.83,2.02],[.78,2.06],[0,2.06]];
+  mesh(new THREE.LatheGeometry(busProfile.map(([radius,y])=>new THREE.Vector2(radius,y)),8),foil,[0,0,0]);
+  for (const [y,radius,material] of [[.96,.93,dark],[1.05,.91,silver],[1.96,.88,dark],[2.04,.85,silver]]) {
+    mesh(new THREE.CylinderGeometry(radius,radius,.035,8),material,[0,y,0]);
+  }
+  mesh(new RoundedBoxGeometry(.82,.27,.7,3,.035),white,[0,2.2,0]);
+  for (const [x,z] of [[-.42,-.43],[-.42,.43],[.42,-.43],[.42,.43]]) {
+    mesh(new THREE.CylinderGeometry(.115,.13,.23,24),silver,[x,2.14,z]);
+    mesh(new THREE.CylinderGeometry(.09,.09,.028,24),dark,[x,2.26,z]);
+  }
+  const bellProfile = [[.34,.408],[.365,.42],[.355,.445],[.30,.5],[.245,.58],[.194,.67],[.165,.76],[.16,.855],[.125,.855],[.122,.76],[.15,.65],[.216,.54],[.303,.43],[.34,.408]];
+  const engine = new THREE.MeshStandardMaterial({color:0x625b53,metalness:.66,roughness:.46,side:THREE.DoubleSide,envMap:reflections,envMapIntensity:.45});
+  mesh(new THREE.LatheGeometry(bellProfile.map(([radius,y])=>new THREE.Vector2(radius,y)),56),engine,[0,0,0]);
+  const rim=mesh(new THREE.TorusGeometry(.35,.014,12,56),silver,[0,.421,0]);rim.rotation.x=Math.PI/2;
+  mesh(new THREE.CylinderGeometry(.225,.18,.11,32),silver,[0,.852,0]);
+  for (const side of [-1,1]) {
+    const tube = new THREE.CatmullRomCurve3([
+      new THREE.Vector3(side*.19,.76,0), new THREE.Vector3(side*.34,.77,.06),
+      new THREE.Vector3(side*.38,.91,.15), new THREE.Vector3(side*.32,1.04,.21),
+    ]);
+    mesh(new THREE.TubeGeometry(tube,20,.028,10),silver,[0,0,0]);
+  }
   for(let i=0;i<4;i++) {
     const a=Math.PI/4+i*Math.PI/2,c=Math.cos(a),s=Math.sin(a);
     const foot=[c*1.65,.1,s*1.65],hip=[c*.69,1.65,s*.69];
     const main=bar(hip,foot,.045),braceRoot=[c*.5,1,s*.5];
     const brace=bar(braceRoot,foot,.027),sleeve=bar([c*1.15,.65,s*1.15],foot,.062,foil);
-    mesh(new THREE.SphereGeometry(.085,12,8),silver,[c*.69,1.65,s*.69]);
+    mesh(new THREE.SphereGeometry(.085,24,16),silver,[c*.69,1.65,s*.69]);
     const pad=new THREE.Group();pad.position.set(foot[0],0,foot[2]);lander.add(pad);
-    mesh(new THREE.CylinderGeometry(.28,.3,.06,20),silver,[0,.03,0],pad);
-    mesh(new THREE.CylinderGeometry(.23,.23,.018,20),dark,[0,.069,0],pad);
+    mesh(new THREE.CylinderGeometry(.28,.3,.06,48),silver,[0,.03,0],pad);
+    mesh(new THREE.CylinderGeometry(.23,.23,.018,48),dark,[0,.069,0],pad);
+    mesh(new THREE.CylinderGeometry(.07,.105,.075,24),silver,[0,.103,0],pad);
+    for (let bolt=0;bolt<6;bolt++) {
+      const angle=bolt*Math.PI/3;
+      mesh(new THREE.CylinderGeometry(.021,.021,.014,6),silver,[.18*Math.cos(angle),.085,.18*Math.sin(angle)],pad);
+    }
     lander.userData.legs.push({x:foot[0],z:foot[2],foot:pad,hip:new THREE.Vector3(...hip),braceRoot:new THREE.Vector3(...braceRoot),main,brace,sleeve});
     for(let j=0;j<3;j++) bar([c*.67,1.12+j*.17,s*.67],[c*.87,1.12+j*.17,s*.87],.012,dark);
   }
   // Front instrument bay, two optical heads and a gold-capped sampling arm.
-  mesh(new THREE.BoxGeometry(.9,.42,.12),white,[0,1.52,.84]);
+  mesh(new RoundedBoxGeometry(.9,.42,.12,3,.04),white,[0,1.52,.84]);
+  const avionics = new THREE.MeshStandardMaterial({color:0x454a4b,metalness:.45,roughness:.52});
+  for (const side of [-1,1]) {
+    const bay = new THREE.Group();
+    bay.position.set(side*.79,1.48,.12);
+    bay.rotation.y=side*Math.PI/2;
+    lander.add(bay);
+    mesh(new RoundedBoxGeometry(.52,.54,.09,2,.028),avionics,[0,0,0],bay);
+    for (let fin=0;fin<7;fin++) {
+      mesh(new RoundedBoxGeometry(.42,.023,.04,1,.008),silver,[0,-.19+fin*.063,.052],bay);
+    }
+    for (const x of [-.215,.215]) for (const y of [-.23,.23]) {
+      const screw=mesh(new THREE.CylinderGeometry(.019,.019,.015,6),dark,[x,y,.052],bay);
+      screw.rotation.x=Math.PI/2;
+    }
+  }
   for(const x of [-.23,.23]) {
-    const ring=mesh(new THREE.CylinderGeometry(.12,.12,.09,24),dark,[x,1.56,.95]);ring.rotation.x=Math.PI/2;
-    const glass=mesh(new THREE.CircleGeometry(.085,24),lens,[x,1.56,1.001]);
+    const ring=mesh(new THREE.CylinderGeometry(.12,.12,.09,40),dark,[x,1.56,.95]);ring.rotation.x=Math.PI/2;
+    mesh(new THREE.TorusGeometry(.098,.009,10,40),silver,[x,1.56,1.001]);
+    const glass=mesh(new THREE.SphereGeometry(.088,32,16),lens,[x,1.56,.989]);glass.scale.z=.22;
     mesh(new THREE.BoxGeometry(.04,.04,.03),silver,[x-.09,1.39,.91]);
     glass.rotation.z=.2;
   }
@@ -139,7 +175,7 @@ export function createLander() {
   const cells=new THREE.MeshStandardMaterial({map:panelTexture,metalness:.35,roughness:.32,color:0xbacbda});
   for(const side of [-1,1]) {
     const wing=new THREE.Group();wing.position.set(side*1.8,1.95,0);wing.rotation.set(.35,0,-side*.1);lander.add(wing);
-    mesh(new THREE.BoxGeometry(1.65,.055,1.15),silver,[0,0,0],wing);
+    mesh(new RoundedBoxGeometry(1.65,.055,1.15,2,.018),silver,[0,0,0],wing);
     const plate=mesh(new THREE.PlaneGeometry(1.57,1.07),cells,[0,.031,0],wing);plate.rotation.x=-Math.PI/2;
     bar([side*.7,1.3,0],[side*1.7,1.9,0],.025);
     mesh(new THREE.CylinderGeometry(.1,.1,.28,12),dark,[side*.85,1.98,0]).rotation.z=Math.PI/2;
@@ -149,7 +185,8 @@ export function createLander() {
   const antenna=new THREE.Group();antenna.position.set(0,2.65,0);antenna.rotation.set(.45,0,-.15);lander.add(antenna);
   const profile=[];
   for(let i=0;i<=20;i++) {const r=i/20*.39;profile.push(new THREE.Vector2(r,r*r/.72));}
-  const dish=mesh(new THREE.LatheGeometry(profile,40),white,[0,0,0],antenna);dish.material=white.clone();dish.material.side=THREE.DoubleSide;
+  const dish=mesh(new THREE.LatheGeometry(profile,64),white,[0,0,0],antenna);dish.material=white.clone();dish.material.side=THREE.DoubleSide;
+  const dishRim=mesh(new THREE.TorusGeometry(.39,.012,10,64),silver,[0,.39**2/.72,0],antenna);dishRim.rotation.x=Math.PI/2;
   for(let i=0;i<3;i++) {const a=i/3*Math.PI*2;bar([Math.cos(a)*.36,.18,Math.sin(a)*.36],[0,.44,0],.009,silver,antenna);}
   mesh(new THREE.CylinderGeometry(.035,.04,.08,12),foil,[0,.44,0],antenna);
   bar([-.49,2.17,-.2],[-.49,2.97,-.2],.012);

@@ -47,7 +47,7 @@ export function createDescent(camera, lander, canvas, wake, heightAt) {
   }
 
   function recenter() {
-    camera.position.copy(landing).add(new THREE.Vector3(19, 12, 28));
+    camera.position.copy(landing).add(new THREE.Vector3(12, 8, 19));
     tracking = true;
     positionLander();
     wake();
