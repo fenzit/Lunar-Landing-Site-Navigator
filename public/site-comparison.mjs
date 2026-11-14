@@ -107,8 +107,8 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
           link.href = record.url; link.textContent = `${t(body)} · JPL API ${record.version}`; article.append(link, ' ');
         }
         const actions = document.createElement('div'); actions.className = 'analysis-actions';
-        const show = document.createElement('button'); show.type = 'button'; show.textContent = t('historyOpen');
-        show.addEventListener('click', () => openRow(row, snapshot.start)); actions.append(show); article.append(actions);
+        const show = document.createElement('button'); show.type = 'button'; show.textContent = t('comparisonInspect');
+        show.addEventListener('click', () => openRow(row, currentTime >= snapshot.start && currentTime <= snapshot.end ? currentTime : snapshot.start)); actions.append(show); article.append(actions);
         if (row.candidates.length) {
           const windows = document.createElement('details'), summary = document.createElement('summary');
           summary.textContent = t('comparisonWindows', { count: row.candidates.length }); windows.append(summary); windows.open = true;
@@ -132,6 +132,7 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
     const completed = await runner.run(snapshot, loader, next => { state = next; render(); });
     if (!completed) return;
     busy = false; message = () => t('comparisonDone'); render();
+    return true;
   }
 
   form.addEventListener('submit', event => {
@@ -146,7 +147,11 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
     }
   });
   form.addEventListener('input', render);
-  cancel.addEventListener('click', () => { runner.cancel(); busy = false; message = () => t('comparisonCancelled'); render(); });
+  cancel.addEventListener('click', () => {
+    runner.cancel(); busy = false;
+    if (state) state.rows = state.rows.map(row => ['pending', 'loading'].includes(row.state) ? { ...row, state: 'cancelled' } : row);
+    message = () => t('comparisonCancelled'); render();
+  });
   for (const button of root.querySelectorAll('[data-compare-pick]')) button.addEventListener('click', () => pick(Number(button.dataset.comparePick)));
   window.addEventListener('resize', drawTimeline);
   return {
@@ -162,5 +167,15 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
       setPoint(0, selected);
     },
     presets(points) { points.slice(0, 2).forEach((p, index) => setPoint(index, p)); },
+    async openPackage({ episode, sites, analyses }) {
+      const points = episode.sites.map(id => sites.find(site => site.id === id));
+      const snapshot = comparisonParameters({ ...episode, points,
+        start: new Date(episode.start).toISOString().slice(0, 16), end: new Date(episode.end).toISOString().slice(0, 16) });
+      field('from').value = new Date(snapshot.start).toISOString().slice(0, 16);
+      field('until').value = new Date(snapshot.end).toISOString().slice(0, 16);
+      field('required').value = snapshot.required; field('height').value = snapshot.height; field('step').value = snapshot.step;
+      points.forEach((point, index) => setPoint(index, point));
+      if (await run(snapshot, async point => analyses.find(data => data.site.lat === point.lat && data.site.lon === point.lon))) openRow(state.rows[0], episode.time);
+    },
   };
 }

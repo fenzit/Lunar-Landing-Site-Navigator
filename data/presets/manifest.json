@@ -1,0 +1,700 @@
+{
+  "format": 1,
+  "modelVersion": "centers-dem-v3",
+  "coverage": {
+    "start": 1794614400000,
+    "end": 1826150400000,
+    "step": 30,
+    "height": 2
+  },
+  "episode": {
+    "start": 1794614400000,
+    "end": 1795219200000,
+    "time": 1794726000000,
+    "required": 4,
+    "height": 2,
+    "step": 30,
+    "sites": [
+      "odysseus",
+      "athena"
+    ]
+  },
+  "sites": [
+    {
+      "id": "odysseus",
+      "name": "Odysseus",
+      "mission": "IM-1 · Malapert A",
+      "lat": -80.1276,
+      "lon": 1.4367,
+      "url": "https://ntrs.nasa.gov/citations/20250010290",
+      "coverage": {
+        "start": 1794614400000,
+        "end": 1826150400000,
+        "stepMinutes": 30
+      },
+      "equipmentHeight": 2,
+      "modelVersion": "centers-dem-v3",
+      "source": {
+        "name": "NASA/JPL Horizons",
+        "mode": "bundle",
+        "records": {
+          "sun": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%271.4367%2C-80.1276%2C2.583568%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:52:48.227Z"
+          },
+          "earth": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%271.4367%2C-80.1276%2C2.583568%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:52:51.050Z"
+          }
+        }
+      },
+      "terrainSources": [
+        {
+          "name": "LOLA south polar DEM · Barker et al. (2023)",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+          "citation": "https://pgda.gsfc.nasa.gov/products/90",
+          "gridMeters": 20
+        },
+        {
+          "name": "LOLA global 64 ppd · Ohio University tiled distribution",
+          "url": "https://www.its.ohio.edu/foundations/lunar/dem/lola-global-64ppd.tif",
+          "citation": "https://www.its.ohio.edu/foundations/lunar/docs.html",
+          "gridMeters": 473.80235037733564
+        }
+      ],
+      "input": {
+        "file": "inputs/odysseus.json.gz",
+        "sha256": "b7d561ea05944539d20ba9219805a0670f32ac63b8f9af3614833e270b8cba08"
+      },
+      "chunks": [
+        {
+          "start": 1794614400000,
+          "end": 1797206400000,
+          "file": "odysseus/2026-11-14.json.gz",
+          "sha256": "63269e02c4b7c4f3f29a9495eb1a6f7fac9bb03a62c1eb9146406eed7069e06c",
+          "bytes": 41943
+        },
+        {
+          "start": 1797206400000,
+          "end": 1799884800000,
+          "file": "odysseus/2026-12-14.json.gz",
+          "sha256": "bd8f999e5f82a32815c6460a85658f93667e55507eeff963e5cf47e859662252",
+          "bytes": 43196
+        },
+        {
+          "start": 1799884800000,
+          "end": 1802563200000,
+          "file": "odysseus/2027-01-14.json.gz",
+          "sha256": "b366fb00fa27bc26b8ef50e9c22a2b194bb718d86b6ea0a821f048a13715f467",
+          "bytes": 43098
+        },
+        {
+          "start": 1802563200000,
+          "end": 1804982400000,
+          "file": "odysseus/2027-02-14.json.gz",
+          "sha256": "437d8e4fad8fbe6efb1c5f3ed636a7562bf33be33d1f0136d849e6919c463b21",
+          "bytes": 39552
+        },
+        {
+          "start": 1804982400000,
+          "end": 1807660800000,
+          "file": "odysseus/2027-03-14.json.gz",
+          "sha256": "4f4542be950104312dbb6d6f891b205bfc0e48820ba4668eaa7d4deb30b86745",
+          "bytes": 43060
+        },
+        {
+          "start": 1807660800000,
+          "end": 1810252800000,
+          "file": "odysseus/2027-04-14.json.gz",
+          "sha256": "66ae848e0ef2dd8a40fce2ebdc75fa65811216d15fffaac8923815466001470c",
+          "bytes": 41976
+        },
+        {
+          "start": 1810252800000,
+          "end": 1812931200000,
+          "file": "odysseus/2027-05-14.json.gz",
+          "sha256": "d8f5bee7122a2abb8f890289a7b000eff05a19eda6641b820c448a07e169d101",
+          "bytes": 43112
+        },
+        {
+          "start": 1812931200000,
+          "end": 1815523200000,
+          "file": "odysseus/2027-06-14.json.gz",
+          "sha256": "59ff62be56b599f6a00b8ba5e55dd17eada26b4ad6ea8de7e63c69e63a47a2b1",
+          "bytes": 42015
+        },
+        {
+          "start": 1815523200000,
+          "end": 1818201600000,
+          "file": "odysseus/2027-07-14.json.gz",
+          "sha256": "afab1064fecea38377b2aa20422ffd5f0a4c679af9269d19b5901f07909255ba",
+          "bytes": 43296
+        },
+        {
+          "start": 1818201600000,
+          "end": 1820880000000,
+          "file": "odysseus/2027-08-14.json.gz",
+          "sha256": "04e56d96e82b2934df775bba42b2603740eab2871a7506a8a86fe1cefb41be9f",
+          "bytes": 43119
+        },
+        {
+          "start": 1820880000000,
+          "end": 1823472000000,
+          "file": "odysseus/2027-09-14.json.gz",
+          "sha256": "804b95bacfa66f11ca8ca5a141414798be6406c104d709cadf9036e7d3266cc4",
+          "bytes": 41993
+        },
+        {
+          "start": 1823472000000,
+          "end": 1826150400000,
+          "file": "odysseus/2027-10-14.json.gz",
+          "sha256": "162fd8077246ccc0db141baec2e4dd9318a018627e8598dcef464113cdaca1ef",
+          "bytes": 42962
+        }
+      ],
+      "surface": {
+        "file": "odysseus/surface.json.gz",
+        "sha256": "af8f3c9ac2b34689bc3ccfa376c011ffc3be4dc7bc486610134c4b1be442e9b1",
+        "bytes": 42552
+      },
+      "landscape": {
+        "file": "odysseus/landscape.json.gz",
+        "sha256": "007c2ac8aad4d482ec5eed967dd200cd7016d1d2b5d77ddd60b5a497ed3422b9",
+        "bytes": 336027
+      }
+    },
+    {
+      "id": "athena",
+      "name": "Athena",
+      "mission": "IM-2 · Mons Mouton",
+      "lat": -84.79059,
+      "lon": 29.19567,
+      "url": "https://ntrs.nasa.gov/citations/20260003150",
+      "coverage": {
+        "start": 1794614400000,
+        "end": 1826150400000,
+        "stepMinutes": 30
+      },
+      "equipmentHeight": 2,
+      "modelVersion": "centers-dem-v3",
+      "source": {
+        "name": "NASA/JPL Horizons",
+        "mode": "bundle",
+        "records": {
+          "sun": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2729.19567%2C-84.79059%2C5.323889%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:52:53.543Z"
+          },
+          "earth": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2729.19567%2C-84.79059%2C5.323889%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:52:55.850Z"
+          }
+        }
+      },
+      "terrainSources": [
+        {
+          "name": "LOLA south polar DEM · Barker et al. (2023)",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+          "citation": "https://pgda.gsfc.nasa.gov/products/90",
+          "gridMeters": 20
+        },
+        {
+          "name": "LOLA global 64 ppd · Ohio University tiled distribution",
+          "url": "https://www.its.ohio.edu/foundations/lunar/dem/lola-global-64ppd.tif",
+          "citation": "https://www.its.ohio.edu/foundations/lunar/docs.html",
+          "gridMeters": 473.80235037733564
+        }
+      ],
+      "input": {
+        "file": "inputs/athena.json.gz",
+        "sha256": "d133a139b7d6a30f8b3e6abec4e927a7a517791d6affdc039ce09066909a1ddb"
+      },
+      "chunks": [
+        {
+          "start": 1794614400000,
+          "end": 1797206400000,
+          "file": "athena/2026-11-14.json.gz",
+          "sha256": "1ec0c3f3538488dad81c2efc0e837ea19a78dfdd7d391f5aee1e2ce8d307f149",
+          "bytes": 41971
+        },
+        {
+          "start": 1797206400000,
+          "end": 1799884800000,
+          "file": "athena/2026-12-14.json.gz",
+          "sha256": "238a1b39d5af2362ca553424299b04f52946767fd1161a0c8b567a757a488322",
+          "bytes": 43191
+        },
+        {
+          "start": 1799884800000,
+          "end": 1802563200000,
+          "file": "athena/2027-01-14.json.gz",
+          "sha256": "075060cce4813304c7db0310c6537c8ee30eec82fb2e11f62da1101e3030278a",
+          "bytes": 43081
+        },
+        {
+          "start": 1802563200000,
+          "end": 1804982400000,
+          "file": "athena/2027-02-14.json.gz",
+          "sha256": "795ff8bb2cc2c54453913aacd35cc584e5faedf45ef6a0180cfa712c4b89a5fa",
+          "bytes": 39676
+        },
+        {
+          "start": 1804982400000,
+          "end": 1807660800000,
+          "file": "athena/2027-03-14.json.gz",
+          "sha256": "0d0cef00b7c7f89ad1e59dc66e88e1c3ea6248b1cff54d2d50dc2fe10c1f6d0f",
+          "bytes": 43119
+        },
+        {
+          "start": 1807660800000,
+          "end": 1810252800000,
+          "file": "athena/2027-04-14.json.gz",
+          "sha256": "6de42d4793a132494025600de134bd63e1d7cc1da9c6ab9b59b689338a24445d",
+          "bytes": 41971
+        },
+        {
+          "start": 1810252800000,
+          "end": 1812931200000,
+          "file": "athena/2027-05-14.json.gz",
+          "sha256": "2647140fea568feb130538075efb46f66067055b4c0710975ce65a24c4ffa0d3",
+          "bytes": 42967
+        },
+        {
+          "start": 1812931200000,
+          "end": 1815523200000,
+          "file": "athena/2027-06-14.json.gz",
+          "sha256": "71167e6762bcfbbfcd3201c2b5a84fedc0ac3928f9fdd82b6bd499837d134ac0",
+          "bytes": 41911
+        },
+        {
+          "start": 1815523200000,
+          "end": 1818201600000,
+          "file": "athena/2027-07-14.json.gz",
+          "sha256": "4a0b7416b9decdf1f4770408c9cae5e093dd88421e65eb7ee426360b161ee3f7",
+          "bytes": 43041
+        },
+        {
+          "start": 1818201600000,
+          "end": 1820880000000,
+          "file": "athena/2027-08-14.json.gz",
+          "sha256": "24ca0b7a008292b435b739dbddb3c06697764ce37315c46e52708f3755101406",
+          "bytes": 43122
+        },
+        {
+          "start": 1820880000000,
+          "end": 1823472000000,
+          "file": "athena/2027-09-14.json.gz",
+          "sha256": "15650faf17c77987eddd7e07559425f2a65703cef90384075d83e56c77f5dea9",
+          "bytes": 41960
+        },
+        {
+          "start": 1823472000000,
+          "end": 1826150400000,
+          "file": "athena/2027-10-14.json.gz",
+          "sha256": "bac75976e79336db079f98d8c280e8a5744ceb582f3ea6191a2954f544db2201",
+          "bytes": 42989
+        }
+      ],
+      "surface": {
+        "file": "athena/surface.json.gz",
+        "sha256": "9b7dde1e1375b2016f9d852a96b52624339430c4859947fdd97012849f02b6bd",
+        "bytes": 38914
+      },
+      "landscape": {
+        "file": "athena/landscape.json.gz",
+        "sha256": "46ec7b1772dad316b15f171f6d806f1f5638867618c32388473d12347b5534c6",
+        "bytes": 335038
+      }
+    },
+    {
+      "id": "north-pole",
+      "name": "North polar sample",
+      "lat": 90,
+      "lon": 25,
+      "mission": "Selected DEM point · 90° N, 25° E",
+      "url": "https://pgda.gsfc.nasa.gov/products/98",
+      "coverage": {
+        "start": 1794614400000,
+        "end": 1826150400000,
+        "stepMinutes": 30
+      },
+      "equipmentHeight": 2,
+      "modelVersion": "centers-dem-v3",
+      "source": {
+        "name": "NASA/JPL Horizons",
+        "mode": "bundle",
+        "records": {
+          "sun": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2725%2C90%2C0.009779%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:53:06.913Z"
+          },
+          "earth": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%2725%2C90%2C0.009779%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T20:53:09.754Z"
+          }
+        }
+      },
+      "terrainSources": [
+        {
+          "name": "LOLA north polar DEM · NASA GSFC",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp_NP/LDEM_80N_20MPP_ADJ.TIF",
+          "citation": "https://pgda.gsfc.nasa.gov/products/98",
+          "gridMeters": 20
+        },
+        {
+          "name": "LOLA global 64 ppd · Ohio University tiled distribution",
+          "url": "https://www.its.ohio.edu/foundations/lunar/dem/lola-global-64ppd.tif",
+          "citation": "https://www.its.ohio.edu/foundations/lunar/docs.html",
+          "gridMeters": 473.80235037733564
+        }
+      ],
+      "input": {
+        "file": "inputs/north-pole.json.gz",
+        "sha256": "2ffc4d911c987e12be24bccfa9921f0e15e167fc78b3063321ecc6c1a7fa690a"
+      },
+      "chunks": [
+        {
+          "start": 1794614400000,
+          "end": 1797206400000,
+          "file": "north-pole/2026-11-14.json.gz",
+          "sha256": "b893832c22ba80f5ebdb2dd172c8d186cf26f5921511bcb6225979b71685f51f",
+          "bytes": 39987
+        },
+        {
+          "start": 1797206400000,
+          "end": 1799884800000,
+          "file": "north-pole/2026-12-14.json.gz",
+          "sha256": "d91b6d2925cfdc02c8d7f776c704b8cb32f31bd57641f9b4badffcae3fc3749c",
+          "bytes": 41596
+        },
+        {
+          "start": 1799884800000,
+          "end": 1802563200000,
+          "file": "north-pole/2027-01-14.json.gz",
+          "sha256": "07d62eab0c0e81294a7338003d2ba59baba5388b73d4c6dc576df36120cc2a56",
+          "bytes": 41676
+        },
+        {
+          "start": 1802563200000,
+          "end": 1804982400000,
+          "file": "north-pole/2027-02-14.json.gz",
+          "sha256": "a77594bd830676c2eb2072243a5a1550a33df0d3ed5149c90c226f1d9aec402c",
+          "bytes": 38406
+        },
+        {
+          "start": 1804982400000,
+          "end": 1807660800000,
+          "file": "north-pole/2027-03-14.json.gz",
+          "sha256": "efe492108e8a59d4ce52ba481ffa53b3f8fd7da964976186c901084f377e75ef",
+          "bytes": 41439
+        },
+        {
+          "start": 1807660800000,
+          "end": 1810252800000,
+          "file": "north-pole/2027-04-14.json.gz",
+          "sha256": "8dfc22ca867049212ca8f18a9d08222d29027f9d8587a912d1d5f42da82eb8fb",
+          "bytes": 39917
+        },
+        {
+          "start": 1810252800000,
+          "end": 1812931200000,
+          "file": "north-pole/2027-05-14.json.gz",
+          "sha256": "af6720ebf16e5227a82fc495ba0e26cbc45248f12588ed471ae747de2e7a20f9",
+          "bytes": 41253
+        },
+        {
+          "start": 1812931200000,
+          "end": 1815523200000,
+          "file": "north-pole/2027-06-14.json.gz",
+          "sha256": "37b77b5b6515e8a0dab10eca0c057a2af57ff76f15102b5c2b604876776d486c",
+          "bytes": 40425
+        },
+        {
+          "start": 1815523200000,
+          "end": 1818201600000,
+          "file": "north-pole/2027-07-14.json.gz",
+          "sha256": "4b8acc336aae659040b657edaeb7d8c380a3e867aaf4dc177eef64d995820132",
+          "bytes": 41877
+        },
+        {
+          "start": 1818201600000,
+          "end": 1820880000000,
+          "file": "north-pole/2027-08-14.json.gz",
+          "sha256": "e55c126c9273763ca08b89d4a2c64b72dbbc69b4795f0b06711f4573184b8410",
+          "bytes": 41794
+        },
+        {
+          "start": 1820880000000,
+          "end": 1823472000000,
+          "file": "north-pole/2027-09-14.json.gz",
+          "sha256": "d40cee1485b33b6ede467ea0cdef6a86385b25701f965f055e47d552f8987504",
+          "bytes": 40355
+        },
+        {
+          "start": 1823472000000,
+          "end": 1826150400000,
+          "file": "north-pole/2027-10-14.json.gz",
+          "sha256": "9939dd9c94a9080bba97f25d6940291169a862e568a93e968a0e093c9d36a5a9",
+          "bytes": 40580
+        }
+      ],
+      "surface": {
+        "file": "north-pole/surface.json.gz",
+        "sha256": "247c38c94738727470ccae61fc4c70235dbdb5af2d1cd17cabec53cb88f0e4f4",
+        "bytes": 38498
+      },
+      "landscape": {
+        "file": "north-pole/landscape.json.gz",
+        "sha256": "53b3bf2a236c2f7d5c90f5a82d27ffaafee810a20a51ce120fff9430c9623b7a",
+        "bytes": 329593
+      }
+    },
+    {
+      "id": "south-polar",
+      "name": "South polar sample",
+      "lat": -89.5,
+      "lon": 0,
+      "mission": "Selected DEM point · 89.5° S, 0° E",
+      "url": "https://pgda.gsfc.nasa.gov/products/90",
+      "coverage": {
+        "start": 1794614400000,
+        "end": 1826150400000,
+        "stepMinutes": 30
+      },
+      "equipmentHeight": 2,
+      "modelVersion": "centers-dem-v3",
+      "source": {
+        "name": "NASA/JPL Horizons",
+        "mode": "bundle",
+        "records": {
+          "sun": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%2710%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-89.5%2C-0.719964%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T21:03:01.447Z"
+          },
+          "earth": {
+            "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27399%27&CENTER=%27coord%40301%27&COORD_TYPE=%27GEODETIC%27&SITE_COORD=%270%2C-89.5%2C-0.719964%27&QUANTITIES=%274%27&ELEV_CUT=%27-90%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+            "version": "1.2",
+            "retrievedUtc": "2026-11-14T21:03:04.042Z"
+          }
+        }
+      },
+      "terrainSources": [
+        {
+          "name": "LOLA south polar DEM · Barker et al. (2023)",
+          "url": "https://pgda.gsfc.nasa.gov/data/LOLA_20mpp/LDEM_80S_20MPP_ADJ.TIF",
+          "citation": "https://pgda.gsfc.nasa.gov/products/90",
+          "gridMeters": 20
+        },
+        {
+          "name": "LOLA global 64 ppd · Ohio University tiled distribution",
+          "url": "https://www.its.ohio.edu/foundations/lunar/dem/lola-global-64ppd.tif",
+          "citation": "https://www.its.ohio.edu/foundations/lunar/docs.html",
+          "gridMeters": 473.80235037733564
+        }
+      ],
+      "input": {
+        "file": "inputs/south-polar.json.gz",
+        "sha256": "98d2ce247e365e798644b6bb3ea47df0ebe900e709072af64b6dd619f0539dde"
+      },
+      "chunks": [
+        {
+          "start": 1794614400000,
+          "end": 1797206400000,
+          "file": "south-polar/2026-11-14.json.gz",
+          "sha256": "2ac88b0d8e0f8d874b473c166d998994f72b66396c8e8847c6d98697cfc51f45",
+          "bytes": 40815
+        },
+        {
+          "start": 1797206400000,
+          "end": 1799884800000,
+          "file": "south-polar/2026-12-14.json.gz",
+          "sha256": "9a915507a027a7ec3b1da3f56a5869257b2be2a5c4eac2dec4ce1438b58f9103",
+          "bytes": 41965
+        },
+        {
+          "start": 1799884800000,
+          "end": 1802563200000,
+          "file": "south-polar/2027-01-14.json.gz",
+          "sha256": "cf495c84103eedd3a8ee30932a1c05ee4d0317fd17effe65771f93008b17c30d",
+          "bytes": 41704
+        },
+        {
+          "start": 1802563200000,
+          "end": 1804982400000,
+          "file": "south-polar/2027-02-14.json.gz",
+          "sha256": "64fd23d19cba3cd239c42ecb6b2b491bd5f4378dc5f240100196c16d0a74d0cf",
+          "bytes": 38457
+        },
+        {
+          "start": 1804982400000,
+          "end": 1807660800000,
+          "file": "south-polar/2027-03-14.json.gz",
+          "sha256": "d52d2a8a5214c3ad6db3f03662bfcd6fdef3ce2d76a3c69eaff6e1eb84d2363f",
+          "bytes": 41767
+        },
+        {
+          "start": 1807660800000,
+          "end": 1810252800000,
+          "file": "south-polar/2027-04-14.json.gz",
+          "sha256": "b5188f2cee987e9422e30db7b30b0766ae12295fabfd52ac5706238ba40ad38d",
+          "bytes": 40678
+        },
+        {
+          "start": 1810252800000,
+          "end": 1812931200000,
+          "file": "south-polar/2027-05-14.json.gz",
+          "sha256": "ce3a6ad40de02a17bd1540058cc4563816bba3cf7538a7e4c492a44ab36544e9",
+          "bytes": 41718
+        },
+        {
+          "start": 1812931200000,
+          "end": 1815523200000,
+          "file": "south-polar/2027-06-14.json.gz",
+          "sha256": "51fad0d8a1436e754068fe3ecce502f5bd2822d6931901cf1e69f9cd617109a9",
+          "bytes": 40636
+        },
+        {
+          "start": 1815523200000,
+          "end": 1818201600000,
+          "file": "south-polar/2027-07-14.json.gz",
+          "sha256": "5fb0705aa2ff316a2a35be202df1f6171b26ddd4f41688e0e8f00c57eb5ce153",
+          "bytes": 41933
+        },
+        {
+          "start": 1818201600000,
+          "end": 1820880000000,
+          "file": "south-polar/2027-08-14.json.gz",
+          "sha256": "fe11f0b0d6396015aa90ddea16c3eb992965506aeb886d5ae35aa1242c9b177a",
+          "bytes": 41730
+        },
+        {
+          "start": 1820880000000,
+          "end": 1823472000000,
+          "file": "south-polar/2027-09-14.json.gz",
+          "sha256": "b2082995b0cc75dfad0ee700386d5b89eab00f180b2c5a0f7de5f65f86527512",
+          "bytes": 40472
+        },
+        {
+          "start": 1823472000000,
+          "end": 1826150400000,
+          "file": "south-polar/2027-10-14.json.gz",
+          "sha256": "0007e99276221a878ff958d939473b569cd4e209cc298f0dfd32499972d04cf4",
+          "bytes": 41484
+        }
+      ],
+      "surface": {
+        "file": "south-polar/surface.json.gz",
+        "sha256": "e901c8451efd06dc135a29b99a19ba79f128dd9681ff00616159003dafbce749",
+        "bytes": 45264
+      },
+      "landscape": {
+        "file": "south-polar/landscape.json.gz",
+        "sha256": "bcb54203703eb9b3091614061fae2672c089b675e4a75dd68598d148a11bd787",
+        "bytes": 349695
+      }
+    }
+  ],
+  "sky": [
+    {
+      "start": 1794614400000,
+      "end": 1797206400000,
+      "file": "sky/2026-11-14.json.gz",
+      "sha256": "e1c89e67fa46f116c794b3edb779698bffe9251f72e51107ffa5ab25b873a3bc",
+      "bytes": 32010
+    },
+    {
+      "start": 1797206400000,
+      "end": 1799884800000,
+      "file": "sky/2026-12-14.json.gz",
+      "sha256": "5fb5fd1946dd13b907874ef50246ad15b64004b6c7e2db60551ac1e6a00e97a5",
+      "bytes": 33431
+    },
+    {
+      "start": 1799884800000,
+      "end": 1802563200000,
+      "file": "sky/2027-01-14.json.gz",
+      "sha256": "aaffc1d19b3443a1dbf762ffa1ea82744733c3f11d41bfff1dd10a78a4ba2b6e",
+      "bytes": 33552
+    },
+    {
+      "start": 1802563200000,
+      "end": 1804982400000,
+      "file": "sky/2027-02-14.json.gz",
+      "sha256": "9f1979dcd2062bee5b0af0078a44de3e1bc4678b4224b9b571b62007be820a14",
+      "bytes": 30274
+    },
+    {
+      "start": 1804982400000,
+      "end": 1807660800000,
+      "file": "sky/2027-03-14.json.gz",
+      "sha256": "85db7447996b57b25cc3e09626a11e82abc8aa24584b3d44f7f3725319353b27",
+      "bytes": 33358
+    },
+    {
+      "start": 1807660800000,
+      "end": 1810252800000,
+      "file": "sky/2027-04-14.json.gz",
+      "sha256": "a9ac938c7435a55cb46bf57ae56e84dd76825673d4dc79ef90fab9d1cdfb7129",
+      "bytes": 31899
+    },
+    {
+      "start": 1810252800000,
+      "end": 1812931200000,
+      "file": "sky/2027-05-14.json.gz",
+      "sha256": "1edcb2557869cdf99eb29bc7b39af90232ad780cdb16a56c11b1a0ccfb0531e7",
+      "bytes": 33217
+    },
+    {
+      "start": 1812931200000,
+      "end": 1815523200000,
+      "file": "sky/2027-06-14.json.gz",
+      "sha256": "7bcf5e4f998a7fdf324a3e69fb59152433607198ba16bcde6dbb80e1542efd8f",
+      "bytes": 32387
+    },
+    {
+      "start": 1815523200000,
+      "end": 1818201600000,
+      "file": "sky/2027-07-14.json.gz",
+      "sha256": "f2fe57fae22aa4e0a5b05fb206f03e252cfad18a1b9b9934dcd61dfa0f1f1367",
+      "bytes": 33600
+    },
+    {
+      "start": 1818201600000,
+      "end": 1820880000000,
+      "file": "sky/2027-08-14.json.gz",
+      "sha256": "d772762acbaddc4f29e026c29fc1e148ada871f5b6facb1fe2d88664568c16cb",
+      "bytes": 33506
+    },
+    {
+      "start": 1820880000000,
+      "end": 1823472000000,
+      "file": "sky/2027-09-14.json.gz",
+      "sha256": "ddaaf008dc4cedbba36a7f783d2596c50393afb5ad936a511887ebd08c7205f1",
+      "bytes": 32301
+    },
+    {
+      "start": 1823472000000,
+      "end": 1826150400000,
+      "file": "sky/2027-10-14.json.gz",
+      "sha256": "b59d00ac6fcfee2a3567b38fd56c101448dd6f9aa18e0ca381ce5a868953714c",
+      "bytes": 32607
+    }
+  ],
+  "skySource": {
+    "mode": "bundle",
+    "url": "https://ssd.jpl.nasa.gov/api/horizons.api?format=json&COMMAND=%27301%27&CENTER=%27500%40399%27&QUANTITIES=%2714%2C15%27&EPHEM_TYPE=%27OBSERVER%27&START_TIME=%272026-11-14+00%3A00%27&STOP_TIME=%272027-11-14+00%3A00%27&STEP_SIZE=%2730m%27&CSV_FORMAT=%27YES%27&APPARENT=%27AIRLESS%27&TIME_TYPE=%27UT%27&TIME_ZONE=%27%2B00%3A00%27&OBJ_DATA=%27NO%27&MAKE_EPHEM=%27YES%27",
+    "version": "1.2",
+    "retrievedUtc": "2026-11-14T20:53:12.520Z"
+  },
+  "skyInput": {
+    "file": "inputs/sky.json.gz",
+    "sha256": "047d71dc3938385ceb0b985a24471bbcdc24336ecc53f7c68148e209c8cb2b97"
+  }
+}

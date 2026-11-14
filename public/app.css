@@ -1,4 +1,8 @@
 [hidden] { display: none !important; }
+#preset-browser form { align-items: end; }
+#preset-browser select[name=site] { max-width: 100%; }
+#preset-open { min-height: 44px; border: 1px solid var(--edge); border-radius: 4px; padding: 8px 12px; color: var(--green); background: #d9efad0b; }
+#preset-sources { font-size: 13px; }
 .site-comparison { scroll-margin-top: 24px; }
 .comparison-points, .comparison-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
 .comparison-points fieldset { min-width: 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: end; border: 1px solid var(--edge); padding: 16px; border-radius: 4px; }

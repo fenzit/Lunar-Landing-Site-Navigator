@@ -9,6 +9,7 @@ import { elevationClearance } from "/lib/terrain-math.mjs";
 import { createVisibilityMap } from "./visibility-map.mjs";
 import { createStartSearch } from './start-search.mjs';
 import { createSiteComparison } from './site-comparison.mjs';
+import { createPresetBrowser } from './preset-browser.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -23,7 +24,7 @@ const viewInfo = {
   descent: ["CAM 04", "descentCaption"],
   chart: ["CAM 03", "chartCaption"],
 };
-const sourceKeys = { demo: "saved", cache: "cached", live: "live" };
+const sourceKeys = { demo: "saved", cache: "cached", live: "live", bundle: 'bundled' };
 const sourceName = mode => t(sourceKeys[mode]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const date = t => `${new Date(t).toISOString().slice(0, 16).replace("T", " ")} UTC`;
@@ -66,6 +67,9 @@ const siteComparison = createSiteComparison($('#site-comparison'), {
     $('#interface').scrollIntoView();
     $('#conditions-toggle').setAttribute('aria-expanded', 'false'); $('#conditions-panel').classList.remove('open');
   },
+});
+const presetBrowser = createPresetBrowser($('#preset-browser'), {
+  load: getJson, open: openSearchResult, date, describeError: requestError,
 });
 
 function searchContext() {
@@ -503,9 +507,25 @@ function play() {
 
 async function init() {
   config = await getJson("/api/sites");
+  $('#offline-note').hidden = !config.offline;
   fillPeriod();
   selectSite(config.sites[0], config.sites[0].id);
   siteComparison.presets(config.sites);
+  presetBrowser.init();
+  $('#defense-demo').addEventListener('click', async event => {
+    const button = event.currentTarget; button.disabled = true; status('presetLoading');
+    try {
+      const data = await getJson('/api/presets/demo');
+      for (const analysis of data.analyses) {
+        const site = data.sites.find(s => s.lat === analysis.site.lat && s.lon === analysis.site.lon);
+        analysisHistory.save(analysis, { site, selection: site.id, required: data.episode.required });
+      }
+      await siteComparison.openPackage(data);
+      await showView('chart');
+      status('defenseReady'); $('#site-comparison').scrollIntoView();
+    } catch (error) { statusRequestError(error); }
+    finally { button.disabled = false; }
+  });
   for (const button of document.querySelectorAll("[data-site]")) button.addEventListener("click", () => {
     comparisonPick = null;
     const kind = button.dataset.site;
@@ -633,6 +653,7 @@ function refreshLanguage() {
   visibilityMap.localize();
   startSearch.localize();
   siteComparison.localize();
+  presetBrowser.localize();
 }
 
 for (const button of document.querySelectorAll("[data-language]")) {
