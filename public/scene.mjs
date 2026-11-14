@@ -7,7 +7,7 @@ import { moonMaterial } from "./moon-material.mjs";
 import { createSun } from "./sun.mjs";
 import { t } from "./i18n.mjs";
 import { createSurface } from './surface.mjs';
-import { createLander } from './lander.mjs';
+import { createLander, landerOccludes } from './lander.mjs';
 
 const rad = Math.PI / 180;
 const relief = 3;
@@ -279,7 +279,7 @@ export function createScene(root, { pick, message, moved }) {
       ground.objects.earth.rotation.y=seconds*.18;
       renderer.render(ground.scene, ground.camera);
       for (const [key, object] of Object.entries(ground.objects)) {
-        projectedLabel(skyLabels[key], object.position, ground.camera, object.visible);
+        projectedLabel(skyLabels[key], object.position, ground.camera, object.visible&&!landerOccludes(ground.lander,ground.camera.position,object.position));
       }
     }
   }

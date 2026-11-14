@@ -7,6 +7,7 @@ import { horizonAt } from '/lib/terrain-math.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
+for(const input of form.elements) input.disabled=true;
 const field = name => form.elements.namedItem(name);
 const slider = $("#time");
 field("hours").max = field("required").max = maxPeriodHours;
@@ -263,12 +264,15 @@ function renderAnalysis(data, keepTime = null) {
 async function loadAnalysis(url, keepTime = null) {
   resetAnalysis();
   const id = requestId;
+  const submitted={lat:field('lat').value,lon:field('lon').value};
   request = new AbortController();
   status("ephemerisLoading");
   try {
     const data = await getJson(url, request.signal);
     if (id !== requestId) return;
+    const edits=Object.fromEntries(['lat','lon'].filter(key=>field(key).value!==submitted[key]).map(key=>[key,field(key).value]));
     selectSite({ ...site, lat: data.site.lat, lon: data.site.lon }, selection, false);
+    for(const [key,value] of Object.entries(edits)) field(key).value=value;
     renderAnalysis(data, keepTime);
     status(sourceKeys[data.source.mode]);
   } catch (error) {
@@ -464,6 +468,7 @@ async function init() {
     });
   }
   window.addEventListener("resize", drawPlots);
+  for(const input of form.elements) input.disabled=false;
   showView("globe");
   await loadAnalysis("/api/demo/odysseus");
 }

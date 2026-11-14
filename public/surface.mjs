@@ -3,6 +3,8 @@ import { destination, gridHeight, moonRadius, terrainLookout } from '/lib/terrai
 import { apiErrorMessage } from '/lib/api-errors.mjs';
 import { language, t } from './i18n.mjs';
 import { createRegolith } from './regolith.mjs';
+import { placeLander } from './lander.mjs';
+import { moveWalker } from '/lib/walking.mjs';
 
 const rad=Math.PI/180;
 export function createSurface(ground, canvas, {message,draw,moved,aim}) {
@@ -87,7 +89,7 @@ export function createSurface(ground, canvas, {message,draw,moved,aim}) {
       dummy.rotation.set(random(),random()*6,random());dummy.updateMatrix();rocks.setMatrixAt(i,dummy.matrix);
     }
     rocks.castShadow=rocks.receiveShadow=true;group.add(rocks);
-    ground.lander.position.set(5,localHeight(5,8),-8);ground.lander.rotation.y=-.45;
+    placeLander(ground.lander,(x,z)=>localHeight(x,-z));
     ground.lander.visible=true;
     if(!preserve) ground.camera.position.set(0,localHeight(0,0)+1.7,0);
     walking.forEach(button=>{button.disabled=false;});
@@ -146,8 +148,7 @@ export function createSurface(ground, canvas, {message,draw,moved,aim}) {
     const length=Math.hypot(forward,side)||1;forward/=length;side/=length;
     const speed=(keys.has('ShiftLeft')||keys.has('ShiftRight')?6:1.6)*dt;
     const camera=ground.camera, limit=(data.grids[0].size-1)*data.grids[0].step*.43;
-    const x=THREE.MathUtils.clamp(camera.position.x+(Math.sin(heading)*forward+Math.cos(heading)*side)*speed,-limit,limit);
-    const z=THREE.MathUtils.clamp(camera.position.z+(-Math.cos(heading)*forward+Math.sin(heading)*side)*speed,-limit,limit);
+    const {x,z}=moveWalker(camera.position,(Math.sin(heading)*forward+Math.cos(heading)*side)*speed,(-Math.cos(heading)*forward+Math.sin(heading)*side)*speed,limit,ground.lander.userData.obstacles);
     camera.position.set(x,localHeight(x,-z)+1.7,z);updatePosition();draw();frame=requestAnimationFrame(walk);
   }
   canvas.addEventListener('keydown',event=>{

@@ -1,8 +1,68 @@
 import * as THREE from 'three';
 
+const labelRay=new THREE.Ray(),labelInverse=new THREE.Matrix4(),labelHit=new THREE.Vector3();
+const hullBounds=new THREE.Box3(new THREE.Vector3(-.95,.88,-.95),new THREE.Vector3(.95,2.35,1.02));
+export function landerOccludes(lander,origin,target) {
+  if(!lander.visible) return false;
+  // Check the hull in local coordinates; avoid raycasting every instrument
+  // triangle twice per rendered frame just to position two text labels.
+  labelInverse.copy(lander.matrixWorld).invert();
+  labelRay.set(origin,target.clone().sub(origin).normalize()).applyMatrix4(labelInverse);
+  if(!labelRay.intersectBox(hullBounds,labelHit)) return false;
+  labelHit.applyMatrix4(lander.matrixWorld);
+  return origin.distanceToSquared(labelHit)<origin.distanceToSquared(target);
+}
+
+export function placeLander(lander,heightAt,{x=5,z=-8,yaw=-.45}={}) {
+  const up=new THREE.Vector3(0,1,0);
+  const height=(x,z)=>{
+    const value=heightAt(x,z);
+    if(!Number.isFinite(value)) throw new Error('Lander placement requires terrain heights');
+    return value;
+  };
+  const normal=(x,z,r=.2)=>new THREE.Vector3(-(height(x+r,z)-height(x-r,z))/(2*r),1,-(height(x,z+r)-height(x,z-r))/(2*r)).normalize();
+  lander.position.set(x,height(x,z),z);
+  lander.quaternion.setFromUnitVectors(up,normal(x,z,1.2)).multiply(new THREE.Quaternion().setFromAxisAngle(up,yaw));
+  lander.updateMatrixWorld(true);
+  const inverse=lander.quaternion.clone().invert();
+  for(const leg of lander.userData.legs) {
+    const world=lander.localToWorld(new THREE.Vector3(leg.x,0,leg.z));
+    world.y=height(world.x,world.z);
+    leg.foot.position.copy(lander.worldToLocal(world.clone()));
+    leg.foot.quaternion.copy(inverse).multiply(new THREE.Quaternion().setFromUnitVectors(up,normal(world.x,world.z)));
+    lander.updateMatrixWorld(true);
+    // A flat circular pad rests on the highest point under its perimeter;
+    // this also avoids clipping where two DEM triangles meet.
+    let lift=0;
+    for(let i=0;i<20;i++) {
+      const a=i/20*Math.PI*2,p=leg.foot.localToWorld(new THREE.Vector3(.3*Math.cos(a),0,.3*Math.sin(a)));
+      lift=Math.max(lift,height(p.x,p.z)-p.y);
+    }
+    world.y+=lift+.001;
+    leg.foot.position.copy(lander.worldToLocal(world));lander.updateMatrixWorld(true);
+    const joint=lander.worldToLocal(leg.foot.localToWorld(new THREE.Vector3(0,.09,0)));
+    positionBar(leg.main,leg.hip,joint);
+    positionBar(leg.brace,leg.braceRoot,joint);
+    positionBar(leg.sleeve,leg.hip.clone().lerp(joint,.65),joint);
+  }
+  lander.updateMatrixWorld(true);
+  const body=lander.localToWorld(new THREE.Vector3(0,1.47,0));
+  lander.userData.obstacles=[{x:body.x,z:body.z,radius:1},...lander.userData.legs.map(leg=>{
+    const p=leg.foot.getWorldPosition(new THREE.Vector3());return {x:p.x,z:p.z,radius:.32};
+  })];
+}
+
+function positionBar(object,from,to) {
+  const direction=to.clone().sub(from);
+  object.position.copy(from).add(to).multiplyScalar(.5);
+  object.scale.y=direction.length()/object.geometry.parameters.height;
+  object.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0),direction.normalize());
+}
+
 // An illustrative robotic lander, not a reconstruction of a flight vehicle.
 export function createLander() {
   const lander=new THREE.Group();
+  lander.userData.legs=[];
   const silver=new THREE.MeshStandardMaterial({color:0xc5cbd1,metalness:.55,roughness:.38});
   const dark=new THREE.MeshStandardMaterial({color:0x20252a,metalness:.2,roughness:.65});
   const white=new THREE.MeshStandardMaterial({color:0xe0dfd3,metalness:.08,roughness:.6});
@@ -48,11 +108,13 @@ export function createLander() {
   for(let i=0;i<4;i++) {
     const a=Math.PI/4+i*Math.PI/2,c=Math.cos(a),s=Math.sin(a);
     const foot=[c*1.65,.1,s*1.65],hip=[c*.69,1.65,s*.69];
-    bar(hip,foot,.045);bar([c*.5,1,s*.5],[c*1.38,.36,s*1.38],.027);
-    bar([c*1.15,.65,s*1.15],foot,.062,foil);
+    const main=bar(hip,foot,.045),braceRoot=[c*.5,1,s*.5];
+    const brace=bar(braceRoot,foot,.027),sleeve=bar([c*1.15,.65,s*1.15],foot,.062,foil);
     mesh(new THREE.SphereGeometry(.085,12,8),silver,[c*.69,1.65,s*.69]);
-    mesh(new THREE.CylinderGeometry(.28,.3,.06,20),silver,[foot[0],.045,foot[2]]);
-    mesh(new THREE.CylinderGeometry(.23,.23,.018,20),dark,[foot[0],.084,foot[2]]);
+    const pad=new THREE.Group();pad.position.set(foot[0],0,foot[2]);lander.add(pad);
+    mesh(new THREE.CylinderGeometry(.28,.3,.06,20),silver,[0,.03,0],pad);
+    mesh(new THREE.CylinderGeometry(.23,.23,.018,20),dark,[0,.069,0],pad);
+    lander.userData.legs.push({x:foot[0],z:foot[2],foot:pad,hip:new THREE.Vector3(...hip),braceRoot:new THREE.Vector3(...braceRoot),main,brace,sleeve});
     for(let j=0;j<3;j++) bar([c*.67,1.12+j*.17,s*.67],[c*.87,1.12+j*.17,s*.87],.012,dark);
   }
   // Front instrument bay, two optical heads and a gold-capped sampling arm.
