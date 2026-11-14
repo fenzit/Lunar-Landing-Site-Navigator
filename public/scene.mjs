@@ -4,11 +4,12 @@ import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { heightAt, moonCoordinates, moonDirection, skyDirection } from "/lib/geography.mjs";
 import { sites } from "/lib/sites.mjs";
 import { moonMaterial } from "./moon-material.mjs";
+import { createSun } from "./sun.mjs";
 
 const rad = Math.PI / 180;
 const relief = 3;
 const referenceKm = 1737.4;
-const bodyDistance = 1.95;
+const bodyDistances = { sun: 52, earth: 17 };
 const bodyNames = { sun: "Солнце", earth: "Земля" };
 const vector = values => new THREE.Vector3(...values);
 const makeLabel = (root, text, className = "") => {
@@ -49,9 +50,10 @@ function makeGlobeGeometry(elevations) {
 }
 
 function makeGlobeBodies(world, root) {
-  const sun = new THREE.Mesh(new THREE.SphereGeometry(.17, 32, 24),
-    new THREE.MeshBasicMaterial({ color: 0xffce78 }));
-  const earth = new THREE.Mesh(new THREE.SphereGeometry(.13, 32, 24),
+  const solar = createSun(9);
+  const sun = solar.mesh;
+  sun.userData.update = solar.update;
+  const earth = new THREE.Mesh(new THREE.SphereGeometry(3.67, 64, 48),
     new THREE.MeshStandardMaterial({ color: 0x9acaff, roughness: 1, emissive: 0x162331 }));
   world.add(sun, earth);
   return Object.fromEntries(Object.entries({ sun, earth }).map(([key, mesh]) => {
@@ -130,12 +132,13 @@ function makeGround() {
   lander.add(dish);
   scene.add(lander);
 
+  const solar = createSun(4.3);
   const objects = {
-    sun: new THREE.Mesh(new THREE.SphereGeometry(4.3, 24, 16), new THREE.MeshBasicMaterial({ color: 0xffd27d })),
+    sun: solar.mesh,
     earth: new THREE.Mesh(new THREE.SphereGeometry(4.7, 24, 16), new THREE.MeshStandardMaterial({ color: 0x5b96c0, emissive: 0x1d4160 })),
   };
   scene.add(objects.sun, objects.earth);
-  return { scene, camera, objects, lander };
+  return { scene, camera, objects, lander, updateSun: solar.update };
 }
 
 export function createScene(root, { pick, message }) {
@@ -147,37 +150,58 @@ export function createScene(root, { pick, message }) {
   root.append(canvas);
 
   const world = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(37, 1, .05, 100);
+  const camera = new THREE.PerspectiveCamera(43, 1, .05, 1200);
   camera.position.set(0, 0, 3.7);
   const controls = new OrbitControls(camera, canvas);
   controls.enablePan = false;
   controls.minDistance = 1.28;
-  controls.maxDistance = 7.5;
+  controls.maxDistance = 600;
   controls.autoRotateSpeed = .55;
   const light = new THREE.DirectionalLight(0xfff5e5, 2.65);
   light.position.set(-2, 3, 4);
   const fill = new THREE.AmbientLight(0xcad9fa, .58);
   world.add(light, fill);
   const bodies = makeGlobeBodies(world, root);
+  const lunarFrame = new THREE.Group();
+  world.add(lunarFrame);
+  const spin = new THREE.Quaternion();
+  const axis = new THREE.Vector3(0, 1, 0);
+  const markerWorld = new THREE.Vector3();
   const ground = makeGround();
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
+  const moonLabel = makeLabel(root, "Луна", "body-label");
   const skyLabels = { sun: makeLabel(root, "Солнце"), earth: makeLabel(root, "Земля") };
   const markers = new THREE.Group();
-  world.add(markers);
+  lunarFrame.add(markers);
   const ray = new THREE.Raycaster();
   let globe, surface, slopeMap, loading, selected, angles, sky, view = "chart";
   let frame = 0, yaw = 0, pitch = 0, faceTarget = null, slopeEnabled = false;
+  const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
+  let animated = !reducedMotion.matches, seconds = 0, lastFrame = 0, flight = null, focusBody = "system";
+  const systemCenter = new THREE.Vector3();
+  const starsGeometry = new THREE.BufferGeometry();
+  const starsPositions = [];
+  let starSeed = 73;
+  const random = () => { starSeed = (Math.imul(starSeed, 1664525) + 1013904223) >>> 0; return starSeed / 4294967296; };
+  for (let i = 0; i < 550; i++) {
+    const y = random() * 2 - 1, a = random() * Math.PI * 2, h = Math.sqrt(1-y*y);
+    starsPositions.push(450*h*Math.cos(a),450*y,450*h*Math.sin(a));
+  }
+  starsGeometry.setAttribute("position", new THREE.Float32BufferAttribute(starsPositions, 3));
+  world.add(new THREE.Points(starsGeometry, new THREE.PointsMaterial({ color: 0xb8c7d4, size: 1, sizeAttenuation: false, transparent: true, opacity: .55 })));
   const pins = [...sites.map((site, index) => ({ site, label: labels[index], color: 0xb1c79d })),
     { site: null, label: pickedLabel, color: 0xd9efad }];
 
   function pinPosition(site) {
     const direction = vector(moonDirection(site.lat, site.lon));
     if (!globe) return direction;
-    ray.set(direction.clone().multiplyScalar(2), direction.clone().negate());
+    const worldDirection = direction.clone().applyQuaternion(spin);
+    lunarFrame.updateMatrixWorld(true);
+    ray.set(worldDirection.clone().multiplyScalar(2), worldDirection.clone().negate());
     const surface = ray.intersectObject(globe)[0];
-    return surface ? surface.point.addScaledVector(direction, .012) : direction.multiplyScalar(1.02);
+    return surface ? lunarFrame.worldToLocal(surface.point).addScaledVector(direction, .012) : direction.multiplyScalar(1.02);
   }
 
   function positionPins() {
@@ -215,7 +239,7 @@ export function createScene(root, { pick, message }) {
       north.wrapS = south.wrapS = THREE.ClampToEdgeWrapping;
       surface = moonMaterial(map, north, south);
       globe = new THREE.Mesh(geometry, surface.material);
-      world.add(globe);
+      lunarFrame.add(globe);
       globe.updateMatrixWorld();
       positionPins();
       if (view === "globe") message("");
@@ -259,14 +283,19 @@ export function createScene(root, { pick, message }) {
     currentCamera.updateProjectionMatrix();
     if (view === "globe") {
       renderer.render(world, camera);
+      projectedLabel(moonLabel, new THREE.Vector3(0, 1.5, 0), camera, Boolean(globe) && focusBody === "system");
       for (const pin of pins) {
         const marker = pin.mesh;
-        const visible = marker?.visible && marker.position.dot(camera.position) > marker.position.lengthSq();
-        if (marker) projectedLabel(pin.label, marker.position, camera, visible);
+        if (marker) {
+          marker.getWorldPosition(markerWorld);
+          const visible = marker.visible && markerWorld.dot(camera.position) > markerWorld.lengthSq();
+          projectedLabel(pin.label, markerWorld, camera, visible);
+        }
       }
       for (const [key, body] of Object.entries(bodies)) labelGlobeBody(body, bodyNames[key], camera);
     } else {
       updateGround();
+      ground.updateSun(seconds);
       renderer.render(ground.scene, ground.camera);
       for (const [key, object] of Object.entries(ground.objects)) {
         projectedLabel(skyLabels[key], object.position, ground.camera, object.visible);
@@ -277,26 +306,101 @@ export function createScene(root, { pick, message }) {
   function resize() {
     if (!root.clientWidth || !root.clientHeight) return;
     renderer.setSize(root.clientWidth, root.clientHeight, false);
+    if (focusBody === "system" && view === "globe") focus("system", false);
     render();
   }
   new ResizeObserver(resize).observe(root);
   controls.addEventListener("change", render);
 
-  function animate() {
-    frame = 0;
-    if (view !== "globe" || !controls.autoRotate) return;
-    controls.update();
-    frame = requestAnimationFrame(animate);
+  function updateBodies() {
+    lunarFrame.rotation.y = seconds * .018;
+    spin.setFromAxisAngle(axis, lunarFrame.rotation.y);
+    bodies.earth.mesh.rotation.y = seconds * .18;
+    bodies.sun.mesh.rotation.y = seconds * .055;
+    bodies.sun.mesh.userData.update(seconds);
+    if (sky) {
+      for (const [key, { mesh }] of Object.entries(bodies)) {
+        mesh.position.copy(vector(moonDirection(sky[`${key}Lat`], sky[`${key}Lon`]))).applyQuaternion(spin).multiplyScalar(bodyDistances[key]);
+      }
+      light.position.copy(bodies.sun.mesh.position);
+    }
+    if (focusBody !== "system" && focusBody !== "moon" && !flight) {
+      const delta = bodies[focusBody].mesh.position.clone().sub(controls.target);
+      controls.target.add(delta); camera.position.add(delta);
+    }
+    if (focusBody === "system" && !flight) {
+      const delta = systemCenter.clone().applyQuaternion(spin).sub(controls.target);
+      controls.target.add(delta); camera.position.add(delta);
+    }
   }
+
+  function animate(now = performance.now()) {
+    frame = 0;
+    if (view !== "globe" || document.hidden) { lastFrame = 0; return; }
+    const dt = lastFrame ? Math.min((now-lastFrame)/1000, .05) : 0;
+    lastFrame = now;
+    if (animated) seconds += dt;
+    updateBodies();
+    if (flight) {
+      const t = reducedMotion.matches ? 1 : Math.min(1, (now-flight.start)/850);
+      const ease = t*t*(3-2*t);
+      camera.position.lerpVectors(flight.from, flight.to, ease);
+      controls.target.lerpVectors(flight.fromTarget, flight.target, ease);
+      if (t === 1) flight = null;
+    }
+    controls.update(dt);
+    render();
+    if (animated || controls.autoRotate || flight) frame = requestAnimationFrame(animate);
+    else lastFrame = 0;
+  }
+
+  function startAnimation() { if (!frame && view === "globe" && !document.hidden) frame = requestAnimationFrame(animate); }
+  function focus(key, smooth = true) {
+    focusBody = key;
+    const target = key === "system" || key === "moon" ? new THREE.Vector3() : bodies[key].mesh.position.clone();
+    const aspect = root.clientWidth / Math.max(1, root.clientHeight);
+    const radius = key === "sun" ? 9 : key === "earth" ? 3.67 : 1;
+    let distance = Math.max(radius*3.8, radius*3.5/Math.max(aspect,.5));
+    if (key === "system") {
+      const box = new THREE.Box3(new THREE.Vector3(-1,-1,-1), new THREE.Vector3(1,1,1));
+      for (const [name, body] of Object.entries(bodies)) {
+        if (!body.mesh.visible) continue;
+        const r = name === "sun" ? 9 : 3.67;
+        box.expandByPoint(body.mesh.position.clone().addScalar(r));
+        box.expandByPoint(body.mesh.position.clone().addScalar(-r));
+      }
+      const bounds = box.getBoundingSphere(new THREE.Sphere());
+      target.copy(bounds.center);
+      systemCenter.copy(target).applyQuaternion(spin.clone().invert());
+      const halfFov = Math.min(camera.fov*rad/2, Math.atan(Math.tan(camera.fov*rad/2)*aspect));
+      distance = bounds.radius / Math.sin(halfFov) * 1.12;
+    }
+    let direction = camera.position.clone().sub(controls.target).normalize();
+    if (key === "system" && sky) {
+      direction.copy(bodies.sun.mesh.position).normalize().add(new THREE.Vector3(0,.4,1)).normalize();
+    }
+    const to = target.clone().addScaledVector(direction, distance);
+    controls.minDistance = key === "system" ? 2 : radius * 1.18;
+    flight = { start: performance.now(), from: camera.position.clone(), fromTarget: controls.target.clone(), to, target };
+    if (!smooth || reducedMotion.matches) { camera.position.copy(to); controls.target.copy(target); flight = null; controls.update(); render(); }
+    startAnimation();
+    for (const button of document.querySelectorAll("[data-focus-body]")) button.setAttribute("aria-pressed", String(button.dataset.focusBody === key));
+  }
+  controls.addEventListener("start", () => { flight = null; });
+  document.addEventListener("visibilitychange", () => { lastFrame = 0; if (document.hidden && frame) { cancelAnimationFrame(frame); frame = 0; } else startAnimation(); });
+  reducedMotion.addEventListener("change", () => { animated = !reducedMotion.matches; if (reducedMotion.matches) controls.autoRotate = false; document.querySelector("#animate-bodies")?.setAttribute("aria-pressed", String(animated)); startAnimation(); });
 
   function pickAt(x, y) {
     if (!globe || view !== "globe") return;
     ray.setFromCamera(new THREE.Vector2(x, y), camera);
     const hit = ray.intersectObject(globe)[0];
-    if (!hit) return;
     const visibleBodies = Object.values(bodies).map(body => body.mesh).filter(mesh => mesh.visible);
-    if (ray.intersectObjects(visibleBodies)[0]?.distance < hit.distance) return;
-    const coords = moonCoordinates(hit.point.x, hit.point.y, hit.point.z);
+    const bodyHit = ray.intersectObjects(visibleBodies)[0];
+    if (bodyHit && (!hit || bodyHit.distance < hit.distance)) { focus(Object.keys(bodies).find(key => bodies[key].mesh === bodyHit.object)); return; }
+    if (!hit) return;
+    if (focusBody !== "moon") { focus("moon"); return; }
+    const local = lunarFrame.worldToLocal(hit.point.clone());
+    const coords = moonCoordinates(local.x, local.y, local.z);
     coords.lat = Math.max(-89.999999, Math.min(89.999999, coords.lat));
     pick(coords);
   }
@@ -330,7 +434,8 @@ export function createScene(root, { pick, message }) {
   });
   canvas.addEventListener("keydown", event => {
     if (view === "globe") {
-      const spherical = new THREE.Spherical().setFromVector3(camera.position);
+      flight = null;
+      const spherical = new THREE.Spherical().setFromVector3(camera.position.clone().sub(controls.target));
       if (event.key === "ArrowLeft") spherical.theta -= .12;
       else if (event.key === "ArrowRight") spherical.theta += .12;
       else if (event.key === "ArrowUp") spherical.phi -= .12;
@@ -339,7 +444,7 @@ export function createScene(root, { pick, message }) {
       else if (event.key === "-") spherical.radius = Math.min(controls.maxDistance, spherical.radius * 1.1);
       else if (event.key === "Enter") pickAt(0, 0);
       else return;
-      camera.position.setFromSpherical(spherical.makeSafe());
+      camera.position.setFromSpherical(spherical.makeSafe()).add(controls.target);
       controls.update();
     } else if (view === "ground" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
       faceTarget = null;
@@ -353,7 +458,7 @@ export function createScene(root, { pick, message }) {
   return {
     show(next) {
       view = next;
-      for (const label of [...labels, pickedLabel, ...Object.values(skyLabels),
+      for (const label of [...labels, pickedLabel, moonLabel, ...Object.values(skyLabels),
         ...Object.values(bodies).map(body => body.label)]) label.hidden = true;
       controls.enabled = view === "globe";
       if (view === "globe" && !loading) loading = loadGlobe();
@@ -362,16 +467,17 @@ export function createScene(root, { pick, message }) {
         message("Условная модель аппарата и размеры объектов");
       }
       resize();
-      if (view === "globe" && controls.autoRotate && !frame) animate();
+      if (view === "globe") { if (focusBody === "system") focus("system", false); startAnimation(); }
     },
     setSite(site, focus) {
       selected = site;
       pins.at(-1).site = site;
       pickedLabel.textContent = site.name;
-      if (focus) {
+      if (focus && focusBody === "moon") {
         const distance = Math.max(3.45, camera.position.length());
         const lat = site.lat * .82;
-        camera.position.copy(vector(moonDirection(lat, site.lon)).multiplyScalar(distance));
+        camera.position.copy(vector(moonDirection(lat, site.lon)).applyQuaternion(spin).multiplyScalar(Math.min(distance, 5)));
+        controls.target.set(0,0,0);
         controls.update();
       }
       positionPins();
@@ -382,30 +488,31 @@ export function createScene(root, { pick, message }) {
       if (view === "ground") render();
     },
     setSky(value) {
+      const hadSky = Boolean(sky);
       sky = value;
       for (const [key, { mesh }] of Object.entries(bodies)) {
         mesh.visible = Boolean(sky);
-        if (sky) mesh.position.copy(vector(moonDirection(sky[`${key}Lat`], sky[`${key}Lon`])).multiplyScalar(bodyDistance));
+        if (sky) mesh.position.copy(vector(moonDirection(sky[`${key}Lat`], sky[`${key}Lon`]))).applyQuaternion(spin).multiplyScalar(bodyDistances[key]);
       }
       // Directional light uses the true angular direction, independent of the display orbit.
       light.position.copy(sky ? bodies.sun.mesh.position : new THREE.Vector3(-2, 3, 4));
-      fill.intensity = sky ? .17 : .58;
+      fill.intensity = sky ? .3 : .58;
+      updateBodies();
+      if (!hadSky && sky && focusBody === "system") focus("system", false);
       if (view === "globe") render();
     },
     faceGlobe(target) {
       if (!sky || view !== "globe") return;
       controls.autoRotate = false;
-      const lon = sky[`${target}Lon`] + (target === "sun" ? -57 : 57);
-      const distance = Math.min(controls.maxDistance, Math.max(5.1, 6.8 / camera.aspect));
-      camera.position.copy(vector(moonDirection(sky[`${target}Lat`], lon)).multiplyScalar(distance));
-      controls.update();
-      render();
+      focus(target);
     },
     toggleRotation() {
       controls.autoRotate = !controls.autoRotate;
-      if (controls.autoRotate && !frame) animate();
+      startAnimation();
       return controls.autoRotate;
     },
+    focusBody: focus,
+    toggleAnimation() { animated = !animated; startAnimation(); return animated; },
     async toggleSlope() {
       await loading;
       if (!globe) return false;

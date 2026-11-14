@@ -17,11 +17,17 @@
       <div class="scene" id="scene">
         <div class="viewport" id="viewport" aria-label="Трёхмерная Луна"></div>
         <div class="map-tools" id="map-tools" hidden>
+          <div class="body-controls" role="group" aria-label="Масштаб сцены">
+            <button data-focus-body="system" type="button" aria-pressed="true">Вся система</button>
+            <button data-focus-body="moon" type="button" aria-pressed="false">К Луне</button>
+          </div>
           <div class="body-controls" id="body-controls" role="group" aria-label="Наведение камеры" hidden>
             <button id="globe-sun" type="button" title="Повернуть камеру к Солнцу">Солнце</button>
             <button id="globe-earth" type="button" title="Повернуть камеру к Земле">Земля</button>
           </div>
-          <button id="rotate" type="button" aria-pressed="false">Вращение</button>
+          <button id="rotate" type="button" aria-pressed="false">Облёт камеры</button>
+          <button id="animate-bodies" type="button" aria-pressed="true">Анимация тел</button>
+          <span class="animation-note">Обзорное вращение · скорости условные</span>
           <button id="slope" type="button" aria-pressed="false">Уклоны</button>
           <div id="slope-key" hidden><span class="slope-gradient"></span><span>0° &nbsp; 10° &nbsp; ≥20°</span><small>Макс. уклон · обзор SLDEM2015</small><small>Без цвета — нет данных</small></div>
         </div>

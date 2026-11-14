@@ -1,4 +1,20 @@
 [hidden] { display: none !important; }
+.animation-note { flex-basis: 100%; text-align: right; color: #b9c6ae; font-size: 10px; }
+.experience:has([data-view="globe"][aria-pressed="true"]) .viewport { height: calc(100% - 118px); }
+.experience:has([data-view="globe"][aria-pressed="true"]) .map-tools { left: 0; justify-content: center; }
+.experience:has([data-view="globe"][aria-pressed="true"]) .animation-note { text-align: center; }
+@media (min-width: 761px) {
+  .experience:has([data-view="globe"][aria-pressed="true"]) { min-height: 860px; }
+  .experience:has([data-view="globe"][aria-pressed="true"]) .scene { inset: 120px 2% 245px; }
+  .experience:has([data-view="globe"][aria-pressed="true"]) .intro { pointer-events: none; }
+}
+@media (max-width: 760px) {
+  .experience:has([data-view="globe"][aria-pressed="true"]) { min-height: 1080px; }
+  .experience:has([data-view="globe"][aria-pressed="true"]) .scene { inset: 310px 12px 255px; }
+}
+@media (max-width: 520px) {
+  .experience:has([data-view="globe"][aria-pressed="true"]) .viewport { height: calc(100% - 162px); }
+}
 
 .experience { min-height: 740px; }
 .intro h1 { margin-bottom: 18px; }

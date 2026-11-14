@@ -383,6 +383,9 @@ async function init() {
   });
   for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
   $("#rotate").addEventListener("click", event => event.currentTarget.setAttribute("aria-pressed", String(renderer?.toggleRotation())));
+  $("#animate-bodies").setAttribute("aria-pressed", String(!reducedMotion.matches));
+  $("#animate-bodies").addEventListener("click", event => event.currentTarget.setAttribute("aria-pressed", String(renderer?.toggleAnimation())));
+  for (const button of document.querySelectorAll("[data-focus-body]")) button.addEventListener("click", () => renderer?.focusBody(button.dataset.focusBody));
   $("#slope").addEventListener("click", async event => {
     const button = event.currentTarget;
     button.disabled = true;
@@ -400,7 +403,7 @@ async function init() {
     });
   }
   mobile.addEventListener("change", drawPlots);
-  if (!mobile.matches) showView("globe");
+  showView("globe");
   await loadAnalysis("/api/demo/odysseus");
 }
 
