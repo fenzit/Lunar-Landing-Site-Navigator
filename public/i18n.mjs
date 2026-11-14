@@ -59,6 +59,7 @@ const messages = {
   viewSelect: ["View", "Точка зрения"],
   globe: ["Globe", "Глобус"],
   ground: ["Surface view", "У поверхности"],
+  surfaceDetails: ["Surface details", "Подробности о поверхности"],
   chart: ["Chart", "График"],
   globeCaption: ["GLOBE · LOLA RELIEF ×3", "ГЛОБУС · РЕЛЬЕФ LOLA ×3"],
   groundCaption: ["SURFACE · REAL DEM · 1:1", "ПОВЕРХНОСТЬ · РЕАЛЬНЫЙ DEM · 1:1"],

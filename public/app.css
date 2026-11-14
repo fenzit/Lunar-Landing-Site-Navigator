@@ -204,7 +204,7 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 .experience .viewport { grid-row: 1; min-height: 320px; }
 .experience .viewport canvas { position: absolute; inset: 0; }
 .experience .map-tools { position: relative; grid-row: 2; left: auto; right: auto; bottom: auto; justify-content: center; padding-top: 12px; }
-.experience .sky-tools { position:relative;grid-row:2;inset:auto;justify-content:flex-start;padding:14px 0;gap:8px; }
+.experience .sky-tools { position:relative;inset:auto;justify-content:flex-start;gap:8px; }
 .surface-info { flex-basis:100%;display:grid;gap:6px;padding:12px 0;color:#d5d9d0;font:13px/1.5 var(--mono); }
 .surface-info b { color:var(--green);font-size:12px;letter-spacing:.06em; }
 .surface-info small { color:#adb6aa;font:13px/1.5 Inter,"Segoe UI",sans-serif; }
@@ -212,5 +212,142 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 .walk-controls button { min-width:44px;touch-action:none;user-select:none; }
 #calculate-here { border-color:var(--green);color:var(--green); }
 .ground-body-label { transform:translate(-50%,14px); }
-.scene:has(#sky-tools:not([hidden])) .viewport { min-height:440px; }
-@media (max-width:760px) { .scene:has(#sky-tools:not([hidden])) .viewport { min-height:360px; } }
+.experience[data-view=ground] {
+  --surface-panel: #0b100ecc;
+  --surface-border: #d9efad30;
+}
+
+.experience[data-view=ground] .intro { display: none; }
+
+.surface-details {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  justify-items: start;
+  grid-row: 2;
+  --details-toggle-size: 44px;
+  pointer-events: none;
+}
+
+.experience[data-view=ground] .surface-details .sky-tools {
+  position: absolute;
+  inset: auto 0 calc(100% + 8px);
+  max-height: min(55svh, 320px);
+  overflow-y: auto;
+  pointer-events: auto;
+}
+
+.experience[data-view=ground] .sky-tools,
+.surface-details-toggle {
+  padding: 12px;
+  border: 1px solid var(--surface-border);
+  border-radius: 6px;
+  background: var(--surface-panel);
+  backdrop-filter: blur(10px);
+}
+
+.surface-details-toggle {
+  display: grid;
+  place-items: center;
+  width: var(--details-toggle-size);
+  height: var(--details-toggle-size);
+  padding: 0;
+  border-radius: 50%;
+  color: var(--green);
+  pointer-events: auto;
+}
+
+.surface-details-toggle svg { width: 24px; height: 24px; }
+.surface-details-toggle:hover,
+.surface-details-toggle[aria-expanded=true] { border-color: var(--green); }
+
+@media (min-width: 761px) {
+  .experience[data-view=ground] {
+    --surface-gutter: clamp(24px, 2vw, 40px);
+    --surface-conditions-width: 254px;
+    grid-template-rows: auto minmax(400px, 1fr) auto auto auto auto;
+  }
+
+  .experience[data-view=ground] .topbar {
+    position: relative;
+    inset: auto;
+    grid-area: 1 / 1;
+    margin: 27px var(--surface-gutter) 0;
+  }
+
+  .experience[data-view=ground] .scene {
+    grid-area: 2 / 1 / 6;
+    grid-template-rows: subgrid;
+    margin: 0;
+    min-height: 0;
+  }
+
+  .experience[data-view=ground] .viewport {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    min-height: 0;
+  }
+
+  .experience[data-view=ground] .conditions {
+    grid-area: 2 / 1 / 4;
+    z-index: 4;
+    margin: 24px var(--surface-gutter) 14px;
+    padding: 16px;
+    width: var(--surface-conditions-width);
+    border: 1px solid var(--surface-border);
+    border-radius: 6px;
+  }
+
+  .experience[data-view=ground] .conditions,
+  .experience[data-view=ground] .readout-header,
+  .experience[data-view=ground] .telemetry {
+    background: var(--surface-panel);
+    backdrop-filter: blur(10px);
+  }
+
+  .experience[data-view=ground] .surface-details {
+    grid-column: 1;
+    justify-self: stretch;
+    align-self: end;
+    max-width: 900px;
+    margin: 0 calc(var(--surface-gutter) + var(--surface-conditions-width) + 16px) 14px var(--surface-gutter);
+  }
+
+  .experience[data-view=ground] .surface-info { padding-block: 2px; }
+
+  .experience[data-view=ground] .readout {
+    display: grid;
+    grid-area: 4 / 1 / 7;
+    grid-template-rows: subgrid;
+    margin-inline: 0;
+    pointer-events: none;
+  }
+
+  .experience[data-view=ground] .readout-header,
+  .experience[data-view=ground] .telemetry {
+    margin: 0;
+    padding-inline: var(--surface-gutter);
+  }
+
+  .experience[data-view=ground] .readout-header {
+    padding-block: 10px 6px;
+    border-top: 1px solid var(--surface-border);
+  }
+
+  .experience[data-view=ground] .telemetry { padding-bottom: 12px; }
+
+  .experience[data-view=ground] .bottom-panel {
+    margin-inline: var(--surface-gutter);
+    pointer-events: auto;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1150px) {
+  .experience[data-view=ground] { --surface-conditions-width: 222px; }
+}
+
+@media (max-width: 760px) {
+  .experience[data-view=ground] .scene { margin: 160px 0 14px; }
+  .experience[data-view=ground] .viewport { min-height: 360px; }
+  .experience[data-view=ground] .surface-details { margin: 12px 20px 0; }
+}

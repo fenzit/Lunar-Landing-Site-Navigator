@@ -304,12 +304,13 @@ function pickSite(coords) {
 
 async function showView(next) {
   view = next;
+  $(".experience").dataset.view = view;
   $("#view-number").textContent = viewInfo[view][0];
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#main-plot").hidden = view !== "chart";
   $("#viewport").hidden = view === "chart";
   $("#map-tools").hidden = view !== "globe";
-  $("#sky-tools").hidden = view !== "ground";
+  $("#surface-details").hidden = view !== "ground";
   renderSky();
   showSceneMessage(null);
   for (const button of document.querySelectorAll("[data-view]")) {
@@ -334,7 +335,7 @@ async function showView(next) {
     renderSky();
   } catch {
     showSceneMessage("no3d");
-    $("#map-tools").hidden = $("#sky-tools").hidden = true;
+    $("#map-tools").hidden = $("#surface-details").hidden = true;
     $("#globe-source").hidden = true;
   }
 }
@@ -447,6 +448,18 @@ async function init() {
     $("#conditions-panel").classList.toggle("open", open);
   });
   for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
+  const surfaceDetailsToggle = $("#surface-details-toggle");
+  const surfaceTools = $("#sky-tools");
+  surfaceDetailsToggle.addEventListener("click", () => {
+    const expanded = surfaceTools.hidden;
+    surfaceTools.hidden = !expanded;
+    surfaceDetailsToggle.setAttribute("aria-expanded", String(expanded));
+  });
+  $("#surface-details").addEventListener("keydown", event => {
+    if (event.key !== "Escape" || surfaceTools.hidden) return;
+    surfaceDetailsToggle.click();
+    surfaceDetailsToggle.focus();
+  });
   $("#rotate").addEventListener("click", event => event.currentTarget.setAttribute("aria-pressed", String(renderer?.toggleRotation())));
   $("#animate-bodies").setAttribute("aria-pressed", String(!reducedMotion.matches));
   $("#animate-bodies").addEventListener("click", event => event.currentTarget.setAttribute("aria-pressed", String(renderer?.toggleAnimation())));
