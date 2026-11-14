@@ -1,0 +1,109 @@
+[hidden] { display: none !important; }
+
+.experience { min-height: 740px; }
+.intro h1 { margin-bottom: 18px; }
+.location b { font-weight: 500; }
+.conditions { width: 232px; }
+.segmented.sites { display: grid; grid-template-columns: 1fr 1fr; }
+.signal + .signal { margin-top: 10px; padding-top: 10px; }
+.scene { position: absolute; inset: 105px 21% 235px; }
+.viewport, .viewport canvas { width: 100%; height: 100%; display: block; }
+.viewport { position: relative; }
+.viewport canvas { touch-action: none; cursor: grab; }
+.viewport canvas:active { cursor: grabbing; }
+.viewport.picking canvas { cursor: crosshair; }
+.vignette { z-index: 1; }
+.main-plot { position: absolute; inset: 0; display: grid; align-content: center; }
+.main-plot svg, #detail-plot svg { width: 100%; height: auto; display: block; overflow: visible; }
+.main-plot svg { max-height: 100%; }
+.plot-bg { fill: #cad9bc16; stroke: #cad9bc35; }
+.plot-grid { stroke: #d2d8cb30; stroke-width: 1; }
+.horizon-line { stroke: #adb4aa; stroke-width: 1; }
+.plot-cursor { stroke: #eff6e9; stroke-width: 1.2; opacity: .84; }
+.sun-line, .earth-line { fill: none; stroke-width: 2.5; }
+.sun-line { stroke: #f2c675; }
+.earth-line { stroke: #90c9ef; stroke-dasharray: 6 3; }
+.sun-band { fill: #e8b76c; stroke: none; }
+.earth-band { fill: #85b7d7; stroke: none; }
+.both-band { fill: #a6bf8c; stroke: none; }
+.start-band { fill: #d9efad; stroke: none; }
+.comparison-band { fill: #bbaadf; stroke: none; }
+.main-plot text, #detail-plot text { fill: #ced5cb; stroke: none; font: 13px var(--mono); }
+.map-tools, .sky-tools { position: absolute; z-index: 2; bottom: 0; right: 0; display: flex; flex-wrap: wrap; gap: 6px; align-items: center; justify-content: end; }
+.map-tools button, .sky-tools button, .analysis-actions button, .calculate-inline {
+  min-height: 44px; padding: 0 12px; border: 1px solid #ffffff35;
+  border-radius: 4px; background: #0b100ef2; font-size: 11px;
+}
+.map-tools button[aria-pressed=true] { color: var(--green); border-color: #d9efad90; }
+.map-tools small { color: #c4c6c0; }
+.body-controls { display: flex; gap: 6px; }
+#globe-sun { color: #ffda91; }
+#globe-earth { color: #a3d5fa; }
+.globe-source { position: absolute; z-index: 2; top: 0; left: 50%; width: max-content; max-width: 100%; transform: translateX(-50%); margin: 0; text-align: center; color: #c6d0c1; font: 10px/1.5 var(--mono); pointer-events: none; }
+.body-label { padding: 2px 5px; border-radius: 2px; background: #08090acc; white-space: nowrap; }
+.body-label.sun { color: #ffda91; }
+.body-label.earth { color: #a3d5fa; }
+#slope-key { width: 100%; display: grid; justify-items: end; gap: 3px; font: 10px var(--mono); color: #e6eadf; }
+.slope-gradient { width: 116px; height: 5px; border-radius: 2px; background: linear-gradient(90deg,#54b770,#f4d463,#df534d); }
+.scene-message { position: absolute; z-index: 2; inset: auto 0 45px; text-align: center; font-size: 11px; color: #d9e5d5; pointer-events: none; }
+.calculate-inline { margin-top: 12px; width: 100%; }
+.sky-label { position: absolute; transform: translate(-50%, 0); font: 10px var(--mono); pointer-events: none; color: #eef3e9; text-shadow: 0 1px 5px black; }
+.map-label { color: #d9efad; background: #0a110edf; border: 1px solid #a5b89560; padding: 4px 6px; white-space: nowrap; }
+
+.bottom-panel { gap: 12px 25px; }
+.timeline { min-height: 24px; font-size: 10px; letter-spacing: .6px; }
+.timeline output { white-space: nowrap; }
+.timeline input { min-width: 0; flex: 1; width: 100%; accent-color: var(--green); min-height: 24px; cursor: pointer; }
+.timeline-status { grid-column: 1/-1; color: #b6c3ad; font-size: 11px; min-height: 15px; }
+.telemetry { gap: 20px; bottom: 162px; }
+.telemetry > div:not(:last-child) { padding-right: 20px; }
+.telemetry span { font-size: 23px; }
+.telemetry .stage-value { font-size: 11px; }
+.telemetry .stage-value.warning { color: #f0b58e; }
+.telemetry .visual-note span { font: 10px Inter, "Segoe UI", sans-serif; white-space: normal; color: #c1caba; }
+.view-caption { bottom: 235px; }
+.scene-hint { bottom: 235px; max-width: 25%; text-align: right; line-height: 1.5; }
+.analysis-panel { border-top: 1px solid var(--edge); padding: 36px; max-width: 1180px; margin: 0 auto; }
+.analysis-panel h2 { margin: 0 0 20px; font-size: 22px; font-weight: 500; }
+#analysis-form { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; }
+#analysis-form label { display: grid; gap: 8px; color: #c4c6c0; font-size: 12px; }
+#analysis-form input { min-height: 44px; width: 128px; padding: 0 9px; background: #0b100e; color: var(--white); border: 1px solid #ffffff35; border-radius: 4px; font: 13px var(--mono); }
+#analysis-form input[type=datetime-local] { width: 203px; }
+#analysis-form button { min-width: 116px; height: 44px; }
+.analysis-actions { display: flex; flex-wrap: wrap; gap: 9px; margin: 14px 0; }
+.analysis-panel a { color: var(--green); text-decoration: underline; }
+.analysis-panel p { line-height: 1.6; overflow-wrap: anywhere; }
+.analysis-panel details { margin-top: 20px; }
+.analysis-panel summary { cursor: pointer; }
+#analysis-status { min-height: 1.6em; color: #d2deca; }
+#detail-plot { max-width: 840px; }
+input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+
+@media (min-width: 761px) and (max-width: 1150px) {
+  .scene { left: 22%; right: 23%; top: 135px; }
+  .intro p { max-width: 170px; }
+  .conditions { width: 192px; }
+  .conditions .section-label { font-size: 8px; letter-spacing: .8px; }
+}
+
+@media (max-width: 760px) {
+  .experience { min-height: 820px; }
+  .intro { top: 111px; }
+  .intro h1 { margin-bottom: 11px; }
+  .location { display: block; margin-top: 13px; }
+  .location span { margin-top: 4px; }
+  .conditions { width: 207px; }
+  .scene { inset: 313px 16px 268px; }
+  .main-plot text, #detail-plot text { font-size: 16px; }
+  .view-caption { bottom: 256px; }
+  .telemetry { bottom: 202px; gap: 12px; }
+  .telemetry > div:not(:last-child) { padding-right: 12px; }
+  .telemetry small { letter-spacing: .55px; }
+  .telemetry span { font-size: 19px; }
+  .telemetry .stage-value { font-size: 9px; letter-spacing: .4px; }
+  .bottom-panel { gap: 8px; }
+  .timeline { font-size: 8px; }
+  .timeline-status { min-height: 28px; font-size: 10px; }
+  .analysis-panel { padding: 24px 20px; }
+  .globe-source { font-size: 9px; }
+}
