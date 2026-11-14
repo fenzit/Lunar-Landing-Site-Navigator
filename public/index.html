@@ -147,6 +147,7 @@
 
     <section class="analysis-panel" id="analysis" aria-labelledby="analysis-title">
       <h2 id="analysis-title" data-i18n="analysis">Analysis settings</h2>
+      <p id="offline-note" data-i18n="offlineLaunch" hidden></p>
       <form id="analysis-form">
         <label><span data-i18n="latitude">Latitude, °</span><input name="lat" type="number" step="any" min="-90" max="90" required></label>
         <label><span data-i18n="longitude">East longitude, °</span><input name="lon" type="number" step="any" min="-180" max="180" required></label>
@@ -157,9 +158,10 @@
         <button type="submit" class="play-button" data-i18n="calculate">Calculate</button>
       </form>
       <div class="analysis-actions">
+        <button id="defense-demo" type="button" data-i18n="defenseDemo">Offline demo · Odysseus + Athena</button>
         <button id="demo" type="button" data-i18n="demo">Open saved scenario</button>
         <button id="odysseus-replay" type="button" data-i18n="odysseusReplay">Replay Odysseus landing</button>
-        <button id="compare" type="button" disabled>Compare with another site</button>
+        <button id="compare" type="button" data-i18n="comparisonTitle" disabled>Compare two sites</button>
         <button id="next" type="button" data-i18n="next" hidden>Go to next viable start</button>
       </div>
       <p id="odysseus-replay-note" hidden>
@@ -167,6 +169,56 @@
         <a id="odysseus-replay-source">NASA/TM–20250010290</a>
       </p>
       <p id="analysis-status" role="status"></p>
+      <section class="start-search" id="preset-browser" aria-labelledby="preset-title">
+        <h3 id="preset-title" data-i18n="presetTitle">12 months · local polar scenarios</h3>
+        <p data-i18n="presetHint">This package uses saved real JPL directions and DEM horizons. It opens without a network or warmed cache. Online calculations use the separate Calculate action above.</p>
+        <form class="comparison-parameters">
+          <label><span data-i18n="presetSite">Packaged site</span><select name="site" aria-describedby="preset-coverage"></select></label>
+          <label><span data-i18n="startUtc">Start, UTC</span><input name="start" type="datetime-local" required></label>
+          <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="1" max="720" step="1" value="168" required></label>
+          <label><span data-i18n="comparisonStep">Step, min</span><select name="step"><option>30</option><option>60</option></select></label>
+          <label><span data-i18n="receiverHeight">Equipment height, m</span><input name="height" type="number" min="0" max="100" step="0.1" value="2" required></label>
+          <label><span data-i18n="searchRequired">Continuous operations, h</span><input name="required" type="number" min="0.25" max="720" step="0.25" value="4" required></label>
+          <button id="preset-open" type="submit" data-i18n="presetOpen" disabled>Open local scenario</button>
+        </form>
+        <p id="preset-coverage"></p><p id="preset-sources"></p>
+        <p id="preset-status" role="status"></p>
+      </section>
+      <section class="start-search site-comparison" id="site-comparison" aria-labelledby="comparison-title">
+        <h3 id="comparison-title" data-i18n="comparisonTitle">Compare two sites</h3>
+        <p data-i18n="comparisonHint">Choose two sites and common UTC conditions. Each side keeps its own result and source status.</p>
+        <form id="comparison-form">
+          <div class="comparison-points">
+            <fieldset><legend data-i18n="comparisonA">Site A</legend>
+              <label><span data-i18n="latitude">Latitude, °</span><input name="lat0" type="number" min="-90" max="90" step="any" required></label>
+              <label><span data-i18n="longitude">East longitude, °</span><input name="lon0" type="number" min="-180" max="180" step="any" required></label>
+              <button type="button" data-compare-pick="0" data-i18n="comparisonPickA">Pick A on globe</button>
+            </fieldset>
+            <fieldset><legend data-i18n="comparisonB">Site B</legend>
+              <label><span data-i18n="latitude">Latitude, °</span><input name="lat1" type="number" min="-90" max="90" step="any" required></label>
+              <label><span data-i18n="longitude">East longitude, °</span><input name="lon1" type="number" min="-180" max="180" step="any" required></label>
+              <button type="button" data-compare-pick="1" data-i18n="comparisonPickB">Pick B on globe</button>
+            </fieldset>
+          </div>
+          <div class="comparison-parameters">
+            <label><span data-i18n="searchFrom">From · UTC</span><input name="from" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
+            <label><span data-i18n="searchUntil">Until · UTC</span><input name="until" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
+            <label><span data-i18n="comparisonStep">Step, min</span><select name="step"><option>1</option><option>5</option><option>10</option><option>15</option><option selected>30</option><option>60</option></select></label>
+            <label><span data-i18n="receiverHeight">Equipment height, m</span><input name="height" type="number" min="0" max="100" step="0.1" value="2" required></label>
+            <label><span data-i18n="searchRequired">Continuous operations, h</span><input name="required" type="number" min="0.25" max="720" step="0.25" value="4" required></label>
+          </div>
+          <div class="analysis-actions">
+            <button id="comparison-submit" type="submit" data-i18n="comparisonSubmit">Calculate A and B</button>
+            <button id="comparison-cancel" type="button" data-i18n="mapCancel" hidden>Cancel</button>
+            <button id="comparison-presets" type="button">Odysseus / Athena</button>
+          </div>
+        </form>
+        <p id="comparison-status" role="status"></p>
+        <p id="comparison-snapshot" hidden></p>
+        <p data-i18n="comparisonLegend">A and B use the same UTC axis. Bright bands cover viable starts and their operations; faint bands show all shared visibility.</p>
+        <div id="comparison-plot"></div>
+        <div id="comparison-results" class="comparison-results"></div>
+      </section>
       <section class="start-search" id="start-search" aria-labelledby="search-title">
         <h3 id="search-title" data-i18n="searchTitle">Find suitable landing starts</h3>
         <p data-i18n="searchHint">Choose a UTC range up to 30 days and uninterrupted operation time. One calculation covers the entire range.</p>

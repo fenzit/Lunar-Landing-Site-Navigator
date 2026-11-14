@@ -6,6 +6,9 @@
   "scripts": {
     "start": "node server.mjs",
     "demo:build": "node scripts/build_demo.mjs",
+    "presets:build": "node scripts/build_presets.mjs",
+    "presets:download": "node scripts/build_presets.mjs --download",
+    "start:offline": "node server.mjs --offline",
     "test": "node --test"
   },
   "engines": {

@@ -8,6 +8,8 @@ import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { elevationClearance } from "/lib/terrain-math.mjs";
 import { createVisibilityMap } from "./visibility-map.mjs";
 import { createStartSearch } from './start-search.mjs';
+import { createSiteComparison } from './site-comparison.mjs';
+import { createPresetBrowser } from './preset-browser.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -22,7 +24,7 @@ const viewInfo = {
   descent: ["CAM 04", "descentCaption"],
   chart: ["CAM 03", "chartCaption"],
 };
-const sourceKeys = { demo: "saved", cache: "cached", live: "live" };
+const sourceKeys = { demo: "saved", cache: "cached", live: "live", bundle: 'bundled' };
 const sourceName = mode => t(sourceKeys[mode]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const date = t => `${new Date(t).toISOString().slice(0, 16).replace("T", " ")} UTC`;
@@ -34,10 +36,10 @@ const angle = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(2)}°`;
 const odysseus = sites.find(point => point.id === odysseusReplay.siteId);
 const touchdown = Date.parse(odysseusReplay.start);
 
-let config, site, analysis, comparison, renderer;
+let config, site, analysis, renderer;
 let view = "chart", selection = "odysseus", frame = 0;
-let requestId = 0, compareId = 0, nextTime = null;
-let request, compareRequest;
+let requestId = 0, nextTime = null, comparisonPick = null;
+let request;
 let required = 4, cursorUpdates = [], currentAngles;
 let sky, skyKey, skyRequest, skyError = false, globeTime;
 let statusMessage, sceneMessage;
@@ -55,6 +57,19 @@ const startSearch=createStartSearch($('#start-search'),{
   context:searchContext,date,duration,describeError:requestError,
   load:(range,selected,signal)=>getJson(periodAnalysisUrl(selected.site,{start:range.start,end:range.end},selected.height),signal),
   open:openSearchResult,
+});
+const siteComparison = createSiteComparison($('#site-comparison'), {
+  load: getJson, open: openSearchResult, date, duration, describeError: requestError,
+  pick: index => {
+    comparisonPick = index;
+    showView('globe'); $('#viewport').classList.add('picking');
+    status('comparisonPickHint', { site: index ? 'B' : 'A' });
+    $('#interface').scrollIntoView();
+    $('#conditions-toggle').setAttribute('aria-expanded', 'false'); $('#conditions-panel').classList.remove('open');
+  },
+});
+const presetBrowser = createPresetBrowser($('#preset-browser'), {
+  load: getJson, open: openSearchResult, date, describeError: requestError,
 });
 
 function searchContext() {
@@ -209,14 +224,12 @@ function resetAnalysis() {
   if (view === "descent") showView("ground");
   stopPlayback();
   request?.abort();
-  compareRequest?.abort();
   requestId++;
-  compareId++;
-  analysis = comparison = currentAngles = null;
+  analysis = currentAngles = null;
   activeHistoryId = null;
   renderHistory();
   renderWindows();
-  $("#compare").textContent = t("compare");
+  $("#compare").textContent = t('comparisonTitle');
   slider.disabled = $("#play").disabled = $("#reset").disabled = $("#compare").disabled = true;
   $("#sun-signal").classList.remove("lost");
   $("#earth-signal").classList.remove("lost");
@@ -265,6 +278,7 @@ function renderTime() {
   const coverage = result.clipped ? ` ${t("coverage")}` : "";
   $("#outcome").textContent = (result.sufficient ? t("windowSufficient") : next) + coverage;
   for (const update of cursorUpdates) update(time);
+  siteComparison.updateTime(time);
   renderer?.setAngles(currentAngles);
   renderSky();
   updateVisibilityMap();
@@ -279,8 +293,8 @@ function updateVisibilityMap() {
 
 function drawPlots() {
   cursorUpdates = [
-    drawChart($("#main-plot"), analysis, required, comparison),
-    drawChart($("#detail-plot"), analysis, required, comparison),
+    drawChart($("#main-plot"), analysis, required),
+    drawChart($("#detail-plot"), analysis, required),
   ];
   renderTime();
 }
@@ -339,9 +353,6 @@ function renderAnalysisText() {
   tag.textContent = sourceName(data.source.mode);
   $("#source").append(tag);
   $("#summary").textContent = t("summary", { total: duration(data.summary.totalMs), longest: duration(data.summary.longestMs) });
-  if (comparison) {
-    $("#summary").textContent += ` ${t("compareSummary", { name: comparison.name, total: duration(comparison.analysis.summary.totalMs) })}`;
-  }
   const provenance = $("#provenance");
   provenance.replaceChildren(`NASA/JPL Horizons · ${sourceName(data.source.mode)} · ${stepMinutes} ${t("minutes")} · ${date(start)} — ${date(end)}. `);
   for (const target of ["sun", "earth"]) {
@@ -363,6 +374,7 @@ function renderAnalysisText() {
 function renderAnalysis(data, keepTime = null) {
   analysis = data;
   startSearch.defaults(data.period,required);
+  siteComparison.defaults(data, site, required);
   const { start, end } = data.period;
   slider.max = (end - start) / minute;
   slider.value = keepTime !== null && keepTime >= start && keepTime <= end ? (keepTime - start) / minute : 0;
@@ -408,6 +420,13 @@ function submit() {
 }
 
 function pickSite(coords) {
+  if (comparisonPick !== null) {
+    siteComparison.setPoint(comparisonPick, coords); comparisonPick = null;
+    $('#viewport').classList.remove('picking');
+    status('comparisonPointSet');
+    $('#site-comparison').scrollIntoView();
+    return;
+  }
   resetAnalysis();
   selectSite(coords, "custom", false);
   $("#viewport").classList.remove("picking");
@@ -486,37 +505,29 @@ function play() {
   frame = requestAnimationFrame(tick);
 }
 
-async function compare() {
-  if (!analysis || comparison) {
-    comparison = null;
-    $("#compare").textContent = t("compare");
-    if (analysis) renderAnalysis(analysis, currentAngles.t);
-    return;
-  }
-  const other = config.sites.find(point => point.id !== site.id);
-  const id = ++compareId;
-  compareRequest = new AbortController();
-  $("#compare").disabled = true;
-  status("comparing", { name: other.name });
-  try {
-    const data = await getJson(periodAnalysisUrl(other, analysis.period), compareRequest.signal);
-    if (id !== compareId) return;
-    comparison = { name: other.name, analysis: data };
-    $("#compare").textContent = t("hideComparison");
-    renderAnalysis(analysis, currentAngles.t);
-    status("compared", () => ({ name: other.name, source: sourceName(data.source.mode) }));
-  } catch (error) {
-    if (id === compareId) statusRequestError(error);
-  } finally {
-    if (id === compareId) $("#compare").disabled = false;
-  }
-}
-
 async function init() {
   config = await getJson("/api/sites");
+  $('#offline-note').hidden = !config.offline;
   fillPeriod();
   selectSite(config.sites[0], config.sites[0].id);
+  siteComparison.presets(config.sites);
+  presetBrowser.init();
+  $('#defense-demo').addEventListener('click', async event => {
+    const button = event.currentTarget; button.disabled = true; status('presetLoading');
+    try {
+      const data = await getJson('/api/presets/demo');
+      for (const analysis of data.analyses) {
+        const site = data.sites.find(s => s.lat === analysis.site.lat && s.lon === analysis.site.lon);
+        analysisHistory.save(analysis, { site, selection: site.id, required: data.episode.required });
+      }
+      await siteComparison.openPackage(data);
+      await showView('chart');
+      status('defenseReady'); $('#site-comparison').scrollIntoView();
+    } catch (error) { statusRequestError(error); }
+    finally { button.disabled = false; }
+  });
   for (const button of document.querySelectorAll("[data-site]")) button.addEventListener("click", () => {
+    comparisonPick = null;
     const kind = button.dataset.site;
     const preset = config.sites.find(point => point.id === kind);
     if (preset) {
@@ -561,7 +572,8 @@ async function init() {
     await showView("ground");
     $("#viewport canvas")?.focus({ preventScroll: true });
   });
-  $("#compare").addEventListener("click", compare);
+  $('#compare').addEventListener('click', () => $('#site-comparison').scrollIntoView());
+  $('#comparison-presets').addEventListener('click', () => siteComparison.presets(config.sites));
   field("receiver").addEventListener("input", updateVisibilityMap);
   for(const key of ['lat','lon','receiver']) field(key).addEventListener('input',()=>startSearch.contextChanged());
   $("#next").addEventListener("click", () => {
@@ -628,7 +640,7 @@ function refreshLanguage() {
   renderHistory();
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#play span").textContent = t(frame ? "pause" : "play");
-  $("#compare").textContent = t(comparison ? "hideComparison" : "compare");
+  $("#compare").textContent = t('comparisonTitle');
   $("#required-display").textContent = required.toLocaleString(language);
   renderSite(false);
   renderAnalysisText();
@@ -640,6 +652,8 @@ function refreshLanguage() {
   renderSky();
   visibilityMap.localize();
   startSearch.localize();
+  siteComparison.localize();
+  presetBrowser.localize();
 }
 
 for (const button of document.querySelectorAll("[data-language]")) {
