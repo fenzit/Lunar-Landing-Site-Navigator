@@ -7,6 +7,7 @@ import { AnalysisHistory, historyLimit } from './analysis-history.mjs';
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { elevationClearance } from "/lib/terrain-math.mjs";
 import { createVisibilityMap } from "./visibility-map.mjs";
+import { createStartSearch } from './start-search.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -50,6 +51,31 @@ const visibilityMap = createVisibilityMap($("#visibility-map"), {
     getJson(periodAnalysisUrl(point, snapshot.analysis.period, snapshot.height), signal),
   describeError: requestError,
 });
+const startSearch=createStartSearch($('#start-search'),{
+  context:searchContext,date,duration,describeError:requestError,
+  load:(range,selected,signal)=>getJson(periodAnalysisUrl(selected.site,{start:range.start,end:range.end},selected.height),signal),
+  open:openSearchResult,
+});
+
+function searchContext() {
+  const lat=field('lat').valueAsNumber,lon=field('lon').valueAsNumber,height=field('receiver').valueAsNumber;
+  if(!config||![lat,lon,height].every(Number.isFinite)||Math.abs(lat)>90||Math.abs(lon)>180||height<0||height>100) return null;
+  const preset=config.sites.find(point=>point.lat===lat&&point.lon===lon);
+  return {site:preset??{lat,lon},selection:preset?.id??'custom',height};
+}
+
+function openSearchResult(data,selected,need,time,focus=true) {
+  resetAnalysis();
+  required=need;field('required').value=need;
+  field('start').value=new Date(data.period.start).toISOString().slice(0,16);
+  field('hours').value=(data.period.end-data.period.start)/hour;
+  field('receiver').value=selected.height;
+  selectSite({...selected.site,...data.site},selected.selection,false);
+  activeHistoryId=analysisHistory.save(data,{site,selection,required});
+  renderAnalysis(data,time);
+  status('searchApplied');
+  if(focus) slider.focus();
+}
 
 function requestError(error) {
   if (!error.responseStatus) return t("requestFailed");
@@ -92,7 +118,10 @@ function showSceneMessage(key) {
 }
 
 function periodParams(start, hours) {
-  return new URLSearchParams({ start_utc: start, duration_hours: hours, step_minutes: 30 });
+  const params=new URLSearchParams({start_utc:start,step_minutes:30});
+  if(Number.isInteger(Number(hours))) params.set('duration_hours',hours);
+  else params.set('end_utc',new Date(Date.parse(start)+Number(hours)*hour).toISOString().replace('.000',''));
+  return params;
 }
 
 function queryUrl(lat, lon, start, hours, height = field("receiver").value) {
@@ -172,9 +201,11 @@ function selectSite(next, kind, focus = true) {
   $("#scene-calculate").hidden = !["custom", "random"].includes(kind);
   renderSite(focus);
   updateVisibilityMap();
+  startSearch.contextChanged();
 }
 
 function resetAnalysis() {
+  startSearch.cancel();
   if (view === "descent") showView("ground");
   stopPlayback();
   request?.abort();
@@ -331,6 +362,7 @@ function renderAnalysisText() {
 
 function renderAnalysis(data, keepTime = null) {
   analysis = data;
+  startSearch.defaults(data.period,required);
   const { start, end } = data.period;
   slider.max = (end - start) / minute;
   slider.value = keepTime !== null && keepTime >= start && keepTime <= end ? (keepTime - start) / minute : 0;
@@ -531,6 +563,7 @@ async function init() {
   });
   $("#compare").addEventListener("click", compare);
   field("receiver").addEventListener("input", updateVisibilityMap);
+  for(const key of ['lat','lon','receiver']) field(key).addEventListener('input',()=>startSearch.contextChanged());
   $("#next").addEventListener("click", () => {
     slider.value = (nextTime - analysis.period.start) / minute;
     renderTime();
@@ -606,6 +639,7 @@ function refreshLanguage() {
   drawPlots();
   renderSky();
   visibilityMap.localize();
+  startSearch.localize();
 }
 
 for (const button of document.querySelectorAll("[data-language]")) {

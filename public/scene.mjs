@@ -157,8 +157,8 @@ export function createScene(root, { pick, message, moved }) {
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
-  const moonLabel = makeLabel(root, t("moon"), "body-label");
-  const skyLabels = { sun: makeLabel(root, t("sun"),'ground-body-label'), earth: makeLabel(root, t("earth"),'ground-body-label') };
+  const moonLabel = makeLabel(root, t("moon"), "body-label moon");
+  const skyLabels = Object.fromEntries(["sun", "earth"].map(key => [key, makeLabel(root, t(key), `ground-body-label ${key}`)]));
   const markers = new THREE.Group();
   lunarFrame.add(markers);
   const ray = new THREE.Raycaster();

@@ -151,7 +151,7 @@
         <label><span data-i18n="latitude">Latitude, °</span><input name="lat" type="number" step="any" min="-90" max="90" required></label>
         <label><span data-i18n="longitude">East longitude, °</span><input name="lon" type="number" step="any" min="-180" max="180" required></label>
         <label><span data-i18n="startUtc">Start, UTC</span><input name="start" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
-        <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="1" step="1" required></label>
+        <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="0.016666666666666666" step="any" required></label>
         <label><span data-i18n="requiredInput">Hours needed for operations</span><input name="required" id="required" type="number" min="0.25" step="0.25" value="4" required></label>
         <label><span data-i18n="receiverHeight">Equipment height, m</span><input name="receiver" type="number" min="0" max="100" step="0.1" value="2" required></label>
         <button type="submit" class="play-button" data-i18n="calculate">Calculate</button>
@@ -167,6 +167,25 @@
         <a id="odysseus-replay-source">NASA/TM–20250010290</a>
       </p>
       <p id="analysis-status" role="status"></p>
+      <section class="start-search" id="start-search" aria-labelledby="search-title">
+        <h3 id="search-title" data-i18n="searchTitle">Find suitable landing starts</h3>
+        <p data-i18n="searchHint">Choose a UTC range up to 30 days and uninterrupted operation time. One calculation covers the entire range.</p>
+        <p id="search-site"></p>
+        <form id="search-form" novalidate>
+          <label><span data-i18n="searchFrom">From · UTC</span><input id="search-start" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" aria-describedby="search-status" required></label>
+          <label><span data-i18n="searchUntil">Until · UTC</span><input id="search-end" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" aria-describedby="search-status" required></label>
+          <label><span data-i18n="searchRequired">Continuous operations, h</span><input id="search-required" type="number" min="0.25" max="720" step="0.25" aria-describedby="search-status" required></label>
+          <button id="search-submit" class="play-button" type="submit" data-i18n="searchSubmit" disabled>Find starts</button>
+          <button id="search-cancel" type="button" data-i18n="mapCancel" hidden>Cancel</button>
+        </form>
+        <p id="search-status" role="status"></p>
+        <label class="search-order"><span data-i18n="searchOrder">Order</span><select id="search-sort" disabled>
+          <option value="earliest" data-i18n="searchEarliest">Earliest first</option>
+          <option value="longest" data-i18n="searchLongest">Longest window first</option>
+        </select></label>
+        <p id="search-snapshot" hidden></p>
+        <div id="search-results"></div>
+      </section>
       <section class="visibility-map" id="visibility-map" aria-labelledby="visibility-map-title">
         <h3 id="visibility-map-title" data-i18n="mapTitle">Local visibility map</h3>
         <div class="analysis-actions visibility-map-actions">
