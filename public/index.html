@@ -32,26 +32,31 @@
           <div id="slope-key" hidden><span class="slope-gradient"></span><span>0° &nbsp; 10° &nbsp; ≥20°</span><small data-i18n="slopeSource">Max slope · SLDEM2015 overview</small><small data-i18n="slopeNoData">Uncolored areas lack data</small></div>
         </div>
         <p class="globe-source" id="globe-source" hidden></p>
-        <div class="sky-tools" id="sky-tools" hidden>
-          <button id="face-sun" type="button" data-i18n="faceSun">Face Sun</button>
-          <button id="face-earth" type="button" data-i18n="faceEarth">Face Earth</button>
-          <button id="surface-reset" type="button" data-i18n="returnSite">Return to site</button>
-          <button id="surface-overview" type="button" data-i18n="terrainOverview" aria-pressed="false" disabled>Terrain overview</button>
-          <button id="surface-lookout" type="button" data-i18n="terrainLookout" disabled>Scenic viewpoint</button>
-          <button id="calculate-here" type="button" data-i18n="calculateHere" disabled>Calculate here</button>
-          <div class="surface-info">
-            <b data-i18n="surfaceReal">MEASURED TERRAIN · 1:1</b>
-            <span id="terrain-status" role="status"></span>
-            <span id="walk-position"></span>
-            <small data-i18n="walkHint">Drag to look · WASD to walk · Shift to move faster · Camera 1.7 m</small>
+        <div class="surface-details" id="surface-details" hidden>
+          <button class="surface-details-toggle" id="surface-details-toggle" type="button" aria-expanded="false" aria-controls="sky-tools" aria-label="Surface details" title="Surface details" data-i18n-label="surfaceDetails" data-i18n-title="surfaceDetails">
+            <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 11v6m0-10h.01"/></svg>
+          </button>
+          <div class="sky-tools" id="sky-tools" hidden>
+            <button id="face-sun" type="button" data-i18n="faceSun">Face Sun</button>
+            <button id="face-earth" type="button" data-i18n="faceEarth">Face Earth</button>
+            <button id="surface-reset" type="button" data-i18n="returnSite">Return to site</button>
+            <button id="surface-overview" type="button" data-i18n="terrainOverview" aria-pressed="false" disabled>Terrain overview</button>
+            <button id="surface-lookout" type="button" data-i18n="terrainLookout" disabled>Scenic viewpoint</button>
+            <button id="calculate-here" type="button" data-i18n="calculateHere" disabled>Calculate here</button>
+            <div class="surface-info">
+              <b data-i18n="surfaceReal">MEASURED TERRAIN · 1:1</b>
+              <span id="terrain-status" role="status"></span>
+              <span id="walk-position"></span>
+              <small data-i18n="walkHint">Drag to look · WASD to walk · Shift to move faster · Camera 1.7 m</small>
+            </div>
+            <div class="walk-controls" role="group" data-i18n-label="walking" aria-label="Walking">
+              <button type="button" data-walk="KeyW" data-i18n-label="walkForward" aria-label="Walk forward">↑</button>
+              <button type="button" data-walk="KeyA" data-i18n-label="walkLeft" aria-label="Walk left">←</button>
+              <button type="button" data-walk="KeyS" data-i18n-label="walkBack" aria-label="Walk back">↓</button>
+              <button type="button" data-walk="KeyD" data-i18n-label="walkRight" aria-label="Walk right">→</button>
+            </div>
+            <button id="terrain-retry" type="button" data-i18n="terrainRetry" hidden>Retry terrain</button>
           </div>
-          <div class="walk-controls" role="group" data-i18n-label="walking" aria-label="Walking">
-            <button type="button" data-walk="KeyW" data-i18n-label="walkForward" aria-label="Walk forward">↑</button>
-            <button type="button" data-walk="KeyA" data-i18n-label="walkLeft" aria-label="Walk left">←</button>
-            <button type="button" data-walk="KeyS" data-i18n-label="walkBack" aria-label="Walk back">↓</button>
-            <button type="button" data-walk="KeyD" data-i18n-label="walkRight" aria-label="Walk right">→</button>
-          </div>
-          <button id="terrain-retry" type="button" data-i18n="terrainRetry" hidden>Retry terrain</button>
         </div>
         <div class="scene-message" id="scene-message" role="status" hidden></div>
         <div id="main-plot" class="main-plot" hidden></div>
