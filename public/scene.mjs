@@ -237,20 +237,21 @@ export function createScene(root, { pick, message, moved }) {
   }
 
   function updateGround() {
+    const localAngles=surfaceView.localAngles(angles);
     for (const key of ["sun", "earth"]) {
       const object = ground.objects[key];
-      const elevation = angles?.[`${key}El`];
+      const elevation = localAngles?.[`${key}El`];
       object.visible = Number.isFinite(elevation);
       if (object.visible) {
-        object.position.copy(vector(skyDirection(angles[`${key}Az`], elevation)).multiplyScalar(100000)).add(ground.camera.position);
+        object.position.copy(vector(skyDirection(localAngles[`${key}Az`], elevation)).multiplyScalar(100000)).add(ground.camera.position);
       }
     }
-    if (faceTarget && angles) {
-      yaw = angles[`${faceTarget}Az`];
-      pitch = THREE.MathUtils.clamp(angles[`${faceTarget}El`]*.6,-45,75);
+    if (faceTarget && localAngles) {
+      yaw = localAngles[`${faceTarget}Az`];
+      pitch = THREE.MathUtils.clamp(localAngles[`${faceTarget}El`]*.6,-45,75);
     }
     ground.camera.lookAt(ground.camera.position.clone().add(vector(skyDirection(yaw, pitch))));
-    surfaceView.update(angles,yaw);
+    surfaceView.update(localAngles,yaw,pitch);
   }
 
   function render() {
