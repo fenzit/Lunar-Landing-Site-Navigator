@@ -185,6 +185,7 @@ export function createSurface(ground,canvas,{message,draw,moved,aim,makeDetails=
     button.addEventListener('pointerup',release);button.addEventListener('pointercancel',release);button.addEventListener('lostpointercapture',release);
   }
   return {
+    heightAt: localHeight,
     setSite(next) {
       if(site?.lat===next.lat&&site?.lon===next.lon) return;
       request?.abort();request=null;landscapeRequest?.abort();landscapeRequest=null;stream.reset(null);

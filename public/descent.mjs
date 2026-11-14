@@ -1,5 +1,6 @@
 import * as THREE from "three";
 import { t } from "./i18n.mjs";
+import { createDescentExhaust } from "./descent-exhaust.mjs";
 
 // An illustrative approach in local metres. Time is playback time.
 export const descentSeconds = 18;
@@ -14,7 +15,7 @@ export function descentOffset(seconds) {
 
 const moveKeys = ["KeyW", "KeyA", "KeyS", "KeyD", "KeyQ", "KeyE", "ShiftLeft", "ShiftRight"];
 
-export function createDescent(camera, lander, canvas, wake) {
+export function createDescent(camera, lander, canvas, wake, heightAt) {
   const play = document.querySelector("#descent-play");
   const scrub = document.querySelector("#descent-time");
   const readout = document.querySelector("#descent-readout");
@@ -27,6 +28,7 @@ export function createDescent(camera, lander, canvas, wake) {
   const up = new THREE.Vector3(0, 1, 0);
   const direction = new THREE.Vector3();
   const orientation = new THREE.Euler(0, 0, 0, "YXZ");
+  const exhaust = createDescentExhaust(lander, heightAt);
   let active = false, ready = false, playing = false, tracking = true, time = 0;
 
   function updateReadout() {
@@ -40,6 +42,7 @@ export function createDescent(camera, lander, canvas, wake) {
     lander.position.set(landing.x + east, landing.y + height, landing.z + south);
     lander.quaternion.copy(levelOrientation).slerp(landedOrientation, Math.max(0, 1 - height / 3));
     lander.updateMatrixWorld(true);
+    exhaust.update(time, height);
     if (tracking) camera.lookAt(lander.position.x, lander.position.y + 1.5, lander.position.z);
   }
 
@@ -88,6 +91,7 @@ export function createDescent(camera, lander, canvas, wake) {
         lander.updateMatrixWorld(true);
       }
       active = value;
+      exhaust.hide();
       ready = playing = false;
       keys.clear();
       time = 0;

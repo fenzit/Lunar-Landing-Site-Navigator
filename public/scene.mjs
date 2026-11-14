@@ -148,7 +148,7 @@ export function createScene(root, { pick, message, moved }) {
   const axis = new THREE.Vector3(0, 1, 0);
   const markerWorld = new THREE.Vector3();
   const ground = makeGround();
-  const descent = createDescent(ground.camera, ground.lander, canvas, startAnimation);
+  const descent = createDescent(ground.camera, ground.lander, canvas, startAnimation, (x, z) => surfaceView.heightAt(x, z));
   const surfaceView=createSurface(ground,canvas,{
     message:key=>{if(view==="ground"||view==="descent") message(key);},
     draw:()=>{if(view==="descent") descent.start();if(view==="ground"||view==="descent") render();},
