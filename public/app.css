@@ -344,7 +344,7 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
   --surface-border: #d9efad30;
 }
 
-.experience:is([data-view=ground], [data-view=globe]) .intro { display: none; }
+.experience[data-view=ground] .intro { display: none; }
 
 .surface-details {
   position: relative;
@@ -435,6 +435,14 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
     min-height: 0;
   }
 
+  .experience[data-view=globe] .intro {
+    grid-area: 2 / 1;
+    z-index: 4;
+    margin: 24px var(--surface-gutter) 14px;
+    max-width: min(340px, 27vw);
+    pointer-events: none;
+  }
+
   .experience:is([data-view=ground], [data-view=globe]) .viewport {
     grid-column: 1;
     grid-row: 1 / -1;
@@ -510,6 +518,7 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 
 @media (max-width: 760px) {
   .experience:is([data-view=ground], [data-view=globe]) .scene { margin: 160px 0 14px; }
+  .experience[data-view=globe] .scene { margin-top: 16px; }
   .experience:is([data-view=ground], [data-view=globe]) .viewport { min-height: 360px; }
   .experience[data-view=ground] .surface-details { margin: 12px 20px 0; }
 }
