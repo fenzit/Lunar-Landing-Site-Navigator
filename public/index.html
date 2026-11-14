@@ -153,11 +153,16 @@
       <p id="analysis-status" role="status"></p>
       <section class="visibility-map" id="visibility-map" aria-labelledby="visibility-map-title">
         <h3 id="visibility-map-title" data-i18n="mapTitle">Local visibility map</h3>
-        <div class="analysis-actions">
+        <div class="analysis-actions visibility-map-actions">
+          <label for="map-spacing">
+            <span data-i18n="mapSpacing">Grid spacing, m</span>
+            <input id="map-spacing" type="number" min="1" step="1" value="400" required>
+          </label>
           <button id="map-calculate" type="button" data-i18n="mapCalculate" disabled>Calculate at slider time</button>
           <button id="map-retry" type="button" data-i18n="mapRetry" hidden>Retry missing points</button>
           <button id="map-cancel" type="button" data-i18n="mapCancel" hidden>Cancel</button>
         </div>
+        <p id="map-spacing-error" data-i18n="mapSpacingError" hidden>Enter a positive whole number of metres.</p>
         <p id="map-snapshot" hidden></p>
         <p id="map-progress" role="status" hidden></p>
         <p id="map-stale" data-i18n="mapStale" hidden>Showing the earlier calculation. Recalculate to use the current selection.</p>

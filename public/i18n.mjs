@@ -1,5 +1,7 @@
 const messages = {
   mapTitle: ["Local visibility map", "Карта видимости вокруг площадки"],
+  mapSpacing: ["Grid spacing, m", "Шаг сетки, м"],
+  mapSpacingError: ["Enter a positive whole number of metres.", "Введите положительное целое число метров."],
   mapCalculate: ["Calculate at slider time", "Рассчитать на время ползунка"],
   mapRetry: ["Retry missing points", "Повторить для точек без данных"],
   mapCancel: ["Cancel", "Отменить"],

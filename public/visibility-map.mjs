@@ -1,7 +1,6 @@
 import { runVisibilityBatch, visibilityGrid } from "/lib/visibility-batch.mjs";
 import { t } from "./i18n.mjs";
 
-const spacing = 400;
 const centerIndex = 4;
 const marker = {
   mapBoth: "◉",
@@ -29,6 +28,8 @@ function coordinates(point) {
 
 export function createVisibilityMap(root, { date, loadPoint, describeError }) {
   const calculate = root.querySelector("#map-calculate");
+  const spacingInput = root.querySelector("#map-spacing");
+  const spacingError = root.querySelector("#map-spacing-error");
   const retry = root.querySelector("#map-retry");
   const cancel = root.querySelector("#map-cancel");
   const grid = root.querySelector("#visibility-grid");
@@ -44,11 +45,15 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
 
   function updateButtons() {
     const running = Boolean(job) && !job.signal.aborted;
-    calculate.disabled = Boolean(job) || !current.analysis?.terrain ||
+    const spacingValid = spacingInput.validity.valid && Number.isSafeInteger(spacingInput.valueAsNumber);
+    spacingError.hidden = spacingValid;
+    spacingInput.setAttribute("aria-invalid", String(!spacingValid));
+    calculate.disabled = Boolean(job) || !spacingValid || !current.analysis?.terrain ||
       !Number.isFinite(current.time) || !Number.isFinite(current.height) || current.height < 0 || current.height > 100;
     cancel.hidden = !running;
     const outdated = snapshot && (
-      current.analysis !== snapshot.analysis || current.time !== snapshot.time || current.height !== snapshot.height
+      current.analysis !== snapshot.analysis || current.time !== snapshot.time || current.height !== snapshot.height ||
+      !spacingValid || spacingInput.valueAsNumber !== snapshot.spacing
     );
     stale.hidden = !outdated;
     retry.hidden = !snapshot || outdated || Boolean(job) || cells.every(({ result }) => result?.bodies);
@@ -74,7 +79,7 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
     updateButtons();
     if (!snapshot) return;
     snapshotLabel.textContent = t("mapSnapshot", {
-      time: date(snapshot.time), center: coordinates(snapshot.analysis.site), height: snapshot.height, spacing,
+      time: date(snapshot.time), center: coordinates(snapshot.analysis.site), height: snapshot.height, spacing: snapshot.spacing,
     });
     const completed = cells.filter(({ result }) => result).length;
     const available = cells.filter(({ result }) => result?.bodies).length;
@@ -92,8 +97,8 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
   }
 
   calculate.addEventListener("click", () => {
-    snapshot = current;
-    const points = visibilityGrid(snapshot.analysis.site, spacing);
+    snapshot = { ...current, spacing: spacingInput.valueAsNumber };
+    const points = visibilityGrid(snapshot.analysis.site, snapshot.spacing);
     selected = centerIndex;
     cells = points.map((point, index) => {
       const button = document.createElement("button");
@@ -145,6 +150,7 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
   cancel.addEventListener("click", () => {
     job?.abort();
   });
+  spacingInput.addEventListener("input", updateButtons);
 
   function localize() {
     legend.replaceChildren(...Object.entries(marker).slice(0, 5).map(([state, symbol]) => {
