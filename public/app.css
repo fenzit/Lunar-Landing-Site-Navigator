@@ -339,12 +339,12 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 .walk-controls button { min-width:44px;touch-action:none;user-select:none; }
 #calculate-here { border-color:var(--green);color:var(--green); }
 .ground-body-label { transform:translate(-50%,14px); }
-.experience[data-view=ground] {
+.experience:is([data-view=ground], [data-view=globe]) {
   --surface-panel: #0b100ecc;
   --surface-border: #d9efad30;
 }
 
-.experience[data-view=ground] .intro { display: none; }
+.experience:is([data-view=ground], [data-view=globe]) .intro { display: none; }
 
 .surface-details {
   position: relative;
@@ -415,33 +415,42 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 }
 
 @media (min-width: 761px) {
-  .experience[data-view=ground] {
+  .experience:is([data-view=ground], [data-view=globe]) {
     --surface-gutter: clamp(24px, 2vw, 40px);
     --surface-conditions-width: 254px;
     grid-template-rows: auto minmax(400px, 1fr) auto auto auto auto;
   }
 
-  .experience[data-view=ground] .topbar {
+  .experience:is([data-view=ground], [data-view=globe]) .topbar {
     position: relative;
     inset: auto;
     grid-area: 1 / 1;
     margin: 27px var(--surface-gutter) 0;
   }
 
-  .experience[data-view=ground] .scene {
+  .experience:is([data-view=ground], [data-view=globe]) .scene {
     grid-area: 2 / 1 / 6;
     grid-template-rows: subgrid;
     margin: 0;
     min-height: 0;
   }
 
-  .experience[data-view=ground] .viewport {
+  .experience:is([data-view=ground], [data-view=globe]) .viewport {
     grid-column: 1;
     grid-row: 1 / -1;
     min-height: 0;
   }
 
-  .experience[data-view=ground] .conditions {
+  .experience[data-view=globe] .map-tools {
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+    justify-content: flex-start;
+    margin-inline: var(--surface-gutter);
+    max-width: calc(100% - var(--surface-conditions-width) - 3 * var(--surface-gutter));
+  }
+
+  .experience:is([data-view=ground], [data-view=globe]) .conditions {
     grid-area: 2 / 1 / 4;
     z-index: 4;
     margin: 24px var(--surface-gutter) 14px;
@@ -451,9 +460,9 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
     border-radius: 6px;
   }
 
-  .experience[data-view=ground] .conditions,
-  .experience[data-view=ground] .readout-header,
-  .experience[data-view=ground] .telemetry {
+  .experience:is([data-view=ground], [data-view=globe]) .conditions,
+  .experience:is([data-view=ground], [data-view=globe]) .readout-header,
+  .experience:is([data-view=ground], [data-view=globe]) .telemetry {
     background: var(--surface-panel);
     backdrop-filter: blur(10px);
   }
@@ -468,7 +477,7 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 
   .experience[data-view=ground] .surface-info { padding-block: 2px; }
 
-  .experience[data-view=ground] .readout {
+  .experience:is([data-view=ground], [data-view=globe]) .readout {
     display: grid;
     grid-area: 4 / 1 / 7;
     grid-template-rows: subgrid;
@@ -476,31 +485,31 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
     pointer-events: none;
   }
 
-  .experience[data-view=ground] .readout-header,
-  .experience[data-view=ground] .telemetry {
+  .experience:is([data-view=ground], [data-view=globe]) .readout-header,
+  .experience:is([data-view=ground], [data-view=globe]) .telemetry {
     margin: 0;
     padding-inline: var(--surface-gutter);
   }
 
-  .experience[data-view=ground] .readout-header {
+  .experience:is([data-view=ground], [data-view=globe]) .readout-header {
     padding-block: 10px 6px;
     border-top: 1px solid var(--surface-border);
   }
 
-  .experience[data-view=ground] .telemetry { padding-bottom: 12px; }
+  .experience:is([data-view=ground], [data-view=globe]) .telemetry { padding-bottom: 12px; }
 
-  .experience[data-view=ground] .bottom-panel {
+  .experience:is([data-view=ground], [data-view=globe]) .bottom-panel {
     margin-inline: var(--surface-gutter);
     pointer-events: auto;
   }
 }
 
 @media (min-width: 761px) and (max-width: 1150px) {
-  .experience[data-view=ground] { --surface-conditions-width: 222px; }
+  .experience:is([data-view=ground], [data-view=globe]) { --surface-conditions-width: 222px; }
 }
 
 @media (max-width: 760px) {
-  .experience[data-view=ground] .scene { margin: 160px 0 14px; }
-  .experience[data-view=ground] .viewport { min-height: 360px; }
+  .experience:is([data-view=ground], [data-view=globe]) .scene { margin: 160px 0 14px; }
+  .experience:is([data-view=ground], [data-view=globe]) .viewport { min-height: 360px; }
   .experience[data-view=ground] .surface-details { margin: 12px 20px 0; }
 }
