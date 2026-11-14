@@ -7,7 +7,7 @@ import { applyTerrain, getSurface, getTerrain } from './lib/terrain.mjs';
 import './lib/config.mjs';
 import { demoHours, demoStart, demoStep, sites } from "./lib/sites.mjs";
 import { apiErrorMessage } from "./lib/api-errors.mjs";
-import { presetAnalysis, presetDemo, presetManifest, presetSky, presetSurface } from './lib/preset-bundle.mjs';
+import { normalizePresetPeriod, presetAnalysis, presetDemo, presetManifest, presetSky, presetSurface } from './lib/preset-bundle.mjs';
 
 const offline = process.argv.includes('--offline') || process.env.LUNARPILOT_OFFLINE === '1';
 const projectRoot = fileURLToPath(new URL('.', import.meta.url));
@@ -55,8 +55,9 @@ const server = createServer(async (req, res) => {
     }
     if (path === '/api/presets') return json(res, await presetManifest());
     if (path === '/api/presets/demo') return json(res, await presetDemo());
+    if (path === '/api/presets/sky') return json(res, await presetSky(normalizePresetPeriod(url.searchParams)));
     if (path === '/api/presets/analysis') {
-      const query = normalizePeriod(url.searchParams);
+      const query = normalizePresetPeriod(url.searchParams);
       return json(res, await presetAnalysis(query, Number(url.searchParams.get('receiver_height_m') ?? 2), url.searchParams.get('site')));
     }
     if (path === "/api/analysis") {

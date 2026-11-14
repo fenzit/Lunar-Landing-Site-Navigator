@@ -6,6 +6,8 @@ export function createStartSearch(root, { context, load, open, date, duration, d
   const form=root.querySelector('form');
   const start=root.querySelector('#search-start'),end=root.querySelector('#search-end');
   const needed=root.querySelector('#search-required'),sort=root.querySelector('#search-sort');
+  const sortControl=sort.closest('label');
+  const sortNote=root.querySelector('#search-sort-note');
   const submit=root.querySelector('#search-submit'),cancel=root.querySelector('#search-cancel');
   const status=root.querySelector('#search-status'),results=root.querySelector('#search-results');
   const caption=root.querySelector('#search-snapshot'),siteLabel=root.querySelector('#search-site');
@@ -25,7 +27,9 @@ export function createStartSearch(root, { context, load, open, date, duration, d
     status.textContent=message?.()??'';
     caption.hidden=!result;
     results.replaceChildren();
-    sort.disabled=!result||Boolean(job);
+    sort.disabled=true;
+    sortControl.hidden=true;
+    sortNote.hidden=true;
     if(!result) return;
     const need=required();
     caption.textContent=t('searchSnapshot',{
@@ -33,6 +37,10 @@ export function createStartSearch(root, { context, load, open, date, duration, d
       start:date(result.analysis.period.start),end:date(result.analysis.period.end),required:need.toLocaleString(language),
     });
     const candidates=suitableCandidates(result.analysis,need,sort.value);
+    sortControl.hidden=candidates.length<2;
+    sort.disabled=Boolean(job)||sortControl.hidden;
+    sortNote.hidden=Boolean(job)||candidates.length!==1;
+    sortNote.textContent=t('searchOrderSingle');
     if(!candidates.length) {
       const empty=document.createElement('p');empty.className='search-empty';empty.textContent=t('searchEmpty');results.append(empty);return;
     }

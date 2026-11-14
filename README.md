@@ -38,7 +38,7 @@ These are LunarPilot results from saved real JPL responses and DEM inputs under 
 | **Chart and windows** | Sun/Earth clearance above terrain, shared intervals, time remaining in the current window, and the next viable start. Analyze up to 30 days; the main analysis form uses a 30-minute ephemeris step. |
 | **Landing-time search** | First and last viable starts in each window over a UTC range. Sort by earliest start or window duration. |
 | **A/B comparison** | Any two sites entered by coordinates or picked on the globe. Shared UTC range, ephemeris step, equipment height, and operation duration; a first viable start, operation margin, and model version for each site. |
-| **Presets and history** | Odysseus and Athena presets and the three latest successful calculations in browser storage. **Show on timeline** restores a saved calculation and moves the cursor to its selected window. |
+| **Presets and history** | Odysseus and Athena presets and the five latest distinct successful calculations in browser storage. **Show on timeline** restores a saved calculation and moves the cursor to its selected window. |
 | **12 months of local scenarios** | Odysseus, Athena, and two additional polar points. Real JPL/DEM inputs covering 14 November 2026–14 November 2027 UTC, loaded by site and month. One button opens the two-site defense demo without a network or cache. |
 | **Surface view** | Walk over measured DEM terrain at 1:1 scale with terrain streaming. Drag to look, use **WASD** to move and **Shift** to move faster. **Face Sun** and **Face Earth** aim the camera; **Calculate here** moves the analysis point to the camera location. Camera height is 1.7 m; equipment height is separate. |
 | **Local visibility map** | Nine nearby points at the selected UTC cursor time. Grid spacing is adjustable, with a 400 m default. Select a point to inspect each body's clearance above the horizon. A denser grid uses the same underlying DEM. |
@@ -52,7 +52,7 @@ For `/api/analysis` and `/api/sky`, pass either `end_utc` or `duration_hours`, n
 
 ### Compare two sites
 
-In **Compare two sites**, enter A/B coordinates or use **Pick A/B on globe**. **Odysseus / Athena** fills the known sites' coordinates. **Calculate A and B** captures the common UTC range, step, equipment height, and operation duration. Supported steps are 1, 5, 10, 15, 30, and 60 minutes, with limits of 30 days and 2000 intervals. Increase the step for longer ranges.
+In **Compare two sites**, enter A/B coordinates or use **Pick A/B on globe**. **Compare Odysseus / Athena** opens the prepared comparison from the local package in one click. **Calculate A and B** captures the common UTC range, step, equipment height, and operation duration. Supported steps are 1, 5, 10, 15, 30, and 60 minutes, with limits of 30 days and 2000 intervals. Increase the step for longer ranges.
 
 Both bands use the same absolute UTC axis. Cards show each site's first viable start and remaining margin after operations. Clicking a start opens that calculation and places the main slider at the first viable minute of the window. A remains available while B loads or if B fails. No shared windows, windows too short for operations, and period-end clipping (`≥`) have separate states. Editing the form marks the displayed results as belonging to earlier settings. Switching EN/RU preserves loaded results.
 
@@ -67,7 +67,7 @@ npm ci
 npm run start:offline
 ```
 
-The [data/presets](data/presets/) package ships with the repository and occupies about 8 MB. There is no need to clear the cache: the package is separate from `data/cache/`. In **12 months · local polar scenarios**, choose a site, a UTC date inside coverage, and a period of up to 30 days. Charts, windows, and the slider use the relevant monthly files; the browser does not load the entire year. Measured surface and landscape grids are included for the prepared demo. Walking beyond included grids can require new DEM data in online mode.
+The [data/presets](data/presets/) package ships with the repository and occupies about 8 MB. There is no need to clear the cache: the package is separate from `data/cache/`. In **12 months · local polar scenarios**, choose a site and a UTC start. The period can extend to the end of coverage. **Use full coverage** fills the start and duration for all 12 months. Charts, windows, and the slider use only the monthly files needed for the selection. Measured surface and landscape grids are included for the prepared demo. Walking beyond included grids can require new DEM data in online mode.
 
 | Site | Latitude / east longitude | UTC coverage | Base step / height |
 | --- | --- | --- | --- |

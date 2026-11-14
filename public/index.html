@@ -175,12 +175,14 @@
         <form class="comparison-parameters">
           <label><span data-i18n="presetSite">Packaged site</span><select name="site" aria-describedby="preset-coverage"></select></label>
           <label><span data-i18n="startUtc">Start, UTC</span><input name="start" type="datetime-local" required></label>
-          <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="1" max="720" step="1" value="168" required></label>
+          <label><span data-i18n="presetPeriod">Local period, h</span><input name="hours" type="number" min="1" step="1" value="168" required aria-describedby="preset-period-limit"></label>
           <label><span data-i18n="comparisonStep">Step, min</span><select name="step"><option>30</option><option>60</option></select></label>
           <label><span data-i18n="receiverHeight">Equipment height, m</span><input name="height" type="number" min="0" max="100" step="0.1" value="2" required></label>
           <label><span data-i18n="searchRequired">Continuous operations, h</span><input name="required" type="number" min="0.25" max="720" step="0.25" value="4" required></label>
           <button id="preset-open" type="submit" data-i18n="presetOpen" disabled>Open local scenario</button>
+          <button id="preset-full" type="button" data-i18n="presetFull" disabled>Use full coverage</button>
         </form>
+        <p id="preset-period-limit" aria-live="polite"></p>
         <p id="preset-coverage"></p><p id="preset-sources"></p>
         <p id="preset-status" role="status"></p>
       </section>
@@ -210,7 +212,7 @@
           <div class="analysis-actions">
             <button id="comparison-submit" type="submit" data-i18n="comparisonSubmit">Calculate A and B</button>
             <button id="comparison-cancel" type="button" data-i18n="mapCancel" hidden>Cancel</button>
-            <button id="comparison-presets" type="button">Odysseus / Athena</button>
+            <button id="comparison-presets" type="button" data-i18n="comparisonPresets" disabled>Compare Odysseus / Athena</button>
           </div>
         </form>
         <p id="comparison-status" role="status"></p>
@@ -231,10 +233,11 @@
           <button id="search-cancel" type="button" data-i18n="mapCancel" hidden>Cancel</button>
         </form>
         <p id="search-status" role="status"></p>
-        <label class="search-order"><span data-i18n="searchOrder">Order</span><select id="search-sort" disabled>
+        <label class="search-order" hidden><span data-i18n="searchOrder">Order</span><select id="search-sort" disabled>
           <option value="earliest" data-i18n="searchEarliest">Earliest first</option>
           <option value="longest" data-i18n="searchLongest">Longest window first</option>
         </select></label>
+        <p id="search-sort-note" aria-live="polite" hidden></p>
         <p id="search-snapshot" hidden></p>
         <div id="search-results"></div>
       </section>

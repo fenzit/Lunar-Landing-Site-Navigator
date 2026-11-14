@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { AnalysisHistory, historyLimit } from '../public/analysis-history.mjs';
+import { AnalysisHistory } from '../public/analysis-history.mjs';
 import { demoAnalysis } from '../lib/horizons.mjs';
 import { sites } from '../lib/sites.mjs';
 import { visibilityRows } from '../public/window-table.mjs';
@@ -24,17 +24,15 @@ test('a later calculation preserves earlier windows, settings and timeline after
     visibilityRows(first.windows.both, first.period, 4));
 });
 
-test('history keeps the three most recent distinct calculations and refreshes duplicates', async () => {
-  const history = new AnalysisHistory(storage()), data = await demoAnalysis(sites[0]);
+test('history keeps the five most recent distinct calculations across reload and refreshes duplicates', async () => {
+  const saved = storage(), history = new AnalysisHistory(saved), data = await demoAnalysis(sites[0]);
   const ids = [];
-  for (let required = 1; required <= historyLimit + 2; required++) ids.push(history.save(data, { ...options, required }));
-  assert.equal(history.records.length, historyLimit);
-  assert.equal(history.get(ids[0]), null);
-  assert.equal(history.get(ids[1]), null);
-  assert.ok(history.get(ids[2]));
-  history.save(data, { ...options, required: 3 });
-  assert.equal(history.records.length, historyLimit);
-  assert.equal(history.records[0].id, ids[2]);
+  for (let required = 1; required <= 6; required++) ids.push(history.save(data, { ...options, required }));
+  const recent = ids.slice(1).reverse();
+  assert.deepEqual(history.records.map(record => record.id), recent);
+  assert.deepEqual(new AnalysisHistory(saved).records.map(record => record.id), recent);
+  history.save(data, { ...options, required: 2 });
+  assert.deepEqual(new AnalysisHistory(saved).records.map(record => record.id), [ids[1], ...recent.slice(0, -1)]);
 });
 
 test('snapshots and restored results cannot mutate another saved calculation', async () => {

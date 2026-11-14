@@ -67,10 +67,10 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
     plot.append(svg); updateTime(currentTime ?? start);
   }
 
-  function openRow(row, time) {
+  function openRow(row, time, focus = true) {
     if (!row.analysis) return;
     const { snapshot } = state;
-    open(row.analysis, { site: row.point, selection: row.point.id ?? 'custom', height: snapshot.height }, snapshot.required, time);
+    open(row.analysis, { site: row.point, selection: row.point.id ?? 'custom', height: snapshot.height }, snapshot.required, time, focus);
   }
 
   function render() {
@@ -175,7 +175,9 @@ export function createSiteComparison(root, { load, open, pick, date, duration, d
       field('until').value = new Date(snapshot.end).toISOString().slice(0, 16);
       field('required').value = snapshot.required; field('height').value = snapshot.height; field('step').value = snapshot.step;
       points.forEach((point, index) => setPoint(index, point));
-      if (await run(snapshot, async point => analyses.find(data => data.site.lat === point.lat && data.site.lon === point.lon))) openRow(state.rows[0], episode.time);
+      const completed = await run(snapshot, async point => analyses.find(data => data.site.lat === point.lat && data.site.lon === point.lon));
+      if (completed) openRow(state.rows[0], episode.time, false);
+      return completed;
     },
   };
 }

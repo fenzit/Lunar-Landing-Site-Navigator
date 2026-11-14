@@ -64,13 +64,12 @@ test('empty analyses and changing requirements do not invent or filter windows',
   assert.equal(updated.clippedEnd, true);
 });
 
-test('one table has at most three calculation rows while retaining all their windows', () => {
-  const records=Array.from({length:5},(_,index)=>({id:String(index),required:4,analysis:{period,windows:{both:[window(10,80),window(120,600)]}}}));
+test('one table has at most five calculation rows while retaining all their windows', () => {
+  const records=Array.from({length:6},(_,index)=>({id:String(index),required:4,analysis:{period,windows:{both:[window(10,80),window(120,600)]}}}));
   const rows=savedCalculations(records,null,4);
-  assert.equal(rows.length,3);
-  assert.deepEqual(rows.map(row=>row.id),['0','1','2']);
+  assert.deepEqual(rows.map(row=>row.id),['0','1','2','3','4']);
   assert.ok(rows.every(row=>row.rows.length===2));
-  assert.equal(records.length,5);
+  assert.equal(records.length,6);
 });
 
 test('changing operation time updates the active calculation margin without changing saved neighbours', () => {

@@ -88,7 +88,7 @@ function openSearchResult(data,selected,need,time,focus=true) {
   selectSite({...selected.site,...data.site},selected.selection,false);
   activeHistoryId=analysisHistory.save(data,{site,selection,required});
   renderAnalysis(data,time);
-  status('searchApplied');
+  status('analysisOpened');
   if(focus) slider.focus();
 }
 
@@ -132,8 +132,8 @@ function showSceneMessage(key) {
   $("#scene-message").hidden = !key || view === "chart";
 }
 
-function periodParams(start, hours) {
-  const params=new URLSearchParams({start_utc:start,step_minutes:30});
+function periodParams(start, hours, step = 30) {
+  const params=new URLSearchParams({start_utc:start,step_minutes:step});
   if(Number.isInteger(Number(hours))) params.set('duration_hours',hours);
   else params.set('end_utc',new Date(Date.parse(start)+Number(hours)*hour).toISOString().replace('.000',''));
   return params;
@@ -175,9 +175,11 @@ function renderSkyProvenance() {
   }
 }
 
-async function loadSky({ start, end }) {
-  const params = periodParams(new Date(start).toISOString().replace(".000", ""), (end - start) / hour);
-  const key = params.toString();
+async function loadSky({ start, end, stepMinutes }, source) {
+  const bundled = source === 'bundle';
+  const params = periodParams(new Date(start).toISOString().replace(".000", ""), (end - start) / hour,
+    bundled ? stepMinutes : 30);
+  const key = (bundled ? '/api/presets/sky?' : '/api/sky?') + params;
   if (key === skyKey) return;
   skyKey = key;
   skyError = false;
@@ -185,7 +187,7 @@ async function loadSky({ start, end }) {
   skyRequest = new AbortController();
   renderSky();
   try {
-    const data = await getJson(`/api/sky?${params}`, skyRequest.signal);
+    const data = await getJson(key, skyRequest.signal);
     if (skyKey !== key) return;
     sky = data;
   } catch {
@@ -383,7 +385,7 @@ function renderAnalysis(data, keepTime = null) {
   $("#timeline-end").textContent = date(end).slice(5, 16);
   renderAnalysisText();
   drawPlots();
-  loadSky(data.period);
+  loadSky(data.period, data.source.mode);
 }
 
 async function loadAnalysis(url, keepTime = null) {
@@ -512,20 +514,30 @@ async function init() {
   selectSite(config.sites[0], config.sites[0].id);
   siteComparison.presets(config.sites);
   presetBrowser.init();
-  $('#defense-demo').addEventListener('click', async event => {
-    const button = event.currentTarget; button.disabled = true; status('presetLoading');
+  const presetCompareButtons = [$('#defense-demo'), $('#comparison-presets')];
+  async function comparePresets(event) {
+    const defense = event.currentTarget.id === 'defense-demo';
+    const setDisabled = disabled => presetCompareButtons.forEach(button => { button.disabled = disabled; });
+    setDisabled(true);
+    status('presetLoading');
     try {
       const data = await getJson('/api/presets/demo');
       for (const analysis of data.analyses) {
         const site = data.sites.find(s => s.lat === analysis.site.lat && s.lon === analysis.site.lon);
         analysisHistory.save(analysis, { site, selection: site.id, required: data.episode.required });
       }
-      await siteComparison.openPackage(data);
-      await showView('chart');
-      status('defenseReady'); $('#site-comparison').scrollIntoView();
+      if (await siteComparison.openPackage(data) && defense) {
+        await showView('chart');
+        status('defenseReady');
+        $('#site-comparison').scrollIntoView();
+      }
     } catch (error) { statusRequestError(error); }
-    finally { button.disabled = false; }
-  });
+    finally { setDisabled(false); }
+  }
+  for (const button of presetCompareButtons) {
+    button.disabled = false;
+    button.addEventListener('click', comparePresets);
+  }
   for (const button of document.querySelectorAll("[data-site]")) button.addEventListener("click", () => {
     comparisonPick = null;
     const kind = button.dataset.site;
@@ -573,7 +585,6 @@ async function init() {
     $("#viewport canvas")?.focus({ preventScroll: true });
   });
   $('#compare').addEventListener('click', () => $('#site-comparison').scrollIntoView());
-  $('#comparison-presets').addEventListener('click', () => siteComparison.presets(config.sites));
   field("receiver").addEventListener("input", updateVisibilityMap);
   for(const key of ['lat','lon','receiver']) field(key).addEventListener('input',()=>startSearch.contextChanged());
   $("#next").addEventListener("click", () => {

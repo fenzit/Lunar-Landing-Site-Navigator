@@ -107,6 +107,27 @@ test('a cold local server opens the demo, graph, sky and all display assets with
   });
   const get = path => fetch(base + path);
   assert.equal((await (await get('/api/sites')).json()).offline, true);
+  const { coverage } = await presetManifest();
+  const fullYear = new URLSearchParams({
+    start_utc: new Date(coverage.start).toISOString().replace('.000', ''),
+    duration_hours: (coverage.end - coverage.start) / hour,
+    step_minutes: 30,
+  });
+  const annual = await get('/api/presets/analysis?site=odysseus&' + fullYear);
+  assert.equal(annual.status, 200);
+  const year = await annual.json();
+  assert.deepEqual(year.period, { start: coverage.start, end: coverage.end, stepMinutes: 30 });
+  assert.equal(year.samples.length, 17521);
+  assert.equal(year.samples.at(-1).t, coverage.end);
+  assert.equal(year.source.mode, 'bundle');
+
+  const annualSky = await get('/api/presets/sky?' + fullYear);
+  assert.equal(annualSky.status, 200);
+  assert.equal((await annualSky.json()).samples.length, year.samples.length);
+  assert.equal((await get('/api/sky?' + fullYear)).status, 400);
+
+  fullYear.set('duration_hours', 8761);
+  assert.equal((await get('/api/presets/analysis?site=odysseus&' + fullYear)).status, 422);
   const response = await get('/api/presets/demo'); assert.equal(response.status, 200);
   const demo = await response.json(); assert.equal(demo.analyses.length, 2);
   const params = new URLSearchParams({ start_utc: '2026-11-14T00:00Z', duration_hours: '168', step_minutes: '30' });
