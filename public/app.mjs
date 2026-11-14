@@ -1,6 +1,6 @@
 import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs";
 import { apiErrorMessage } from "/lib/api-errors.mjs";
-import { maxPeriodHours } from "/lib/sites.mjs";
+import { maxPeriodHours, odysseusReplay, sites } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { elevationClearance } from "/lib/terrain-math.mjs";
@@ -27,6 +27,8 @@ const duration = ms => {
   return ms > 0 && m === 0 ? `<1 ${t("minutes")}` : `${Math.floor(m / 60)} ${t("hours")} ${String(m % 60).padStart(2, "0")} ${t("minutes")}`;
 };
 const angle = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(2)}°`;
+const odysseus = sites.find(point => point.id === odysseusReplay.siteId);
+const touchdown = Date.parse(odysseusReplay.start);
 
 let config, site, analysis, comparison, renderer;
 let view = "chart", selection = "odysseus", frame = 0;
@@ -182,14 +184,15 @@ function resetAnalysis() {
   $("#source").textContent = "JPL HORIZONS";
   $("#timeline-end").textContent = "UTC";
   $("#next").hidden = true;
+  $("#odysseus-replay-note").hidden = true;
   drawPlots();
   renderer?.setAngles(null);
   updateVisibilityMap();
 }
 
-function fillPeriod() {
-  field("start").value = config.demo.start.slice(0, 16);
-  field("hours").value = config.demo.hours;
+function fillPeriod({ start, hours } = config.demo) {
+  field("start").value = start.slice(0, 16);
+  field("hours").value = hours;
 }
 
 function updateSignal(name, el, az) {
@@ -244,6 +247,12 @@ function renderAnalysisText() {
   if (!analysis) return;
   const data = analysis;
   const { start, end, stepMinutes } = data.period;
+  const historical = data.site.lat === odysseus.lat && data.site.lon === odysseus.lon &&
+    start === touchdown && end - start === odysseusReplay.hours * hour;
+  $("#odysseus-replay-note").hidden = !historical;
+  if (historical) {
+    $("#odysseus-replay-caption").textContent = t("odysseusReplayCaption", { time: date(start), hours: odysseusReplay.hours });
+  }
   $("#source").replaceChildren("JPL HORIZONS", document.createElement("br"));
   const tag = document.createElement("span");
   tag.textContent = sourceName(data.source.mode);
@@ -447,6 +456,13 @@ async function init() {
     fillPeriod();
     selectSite(preset, preset.id);
     loadAnalysis(`/api/demo/${preset.id}?receiver_height_m=${field('receiver').value}`);
+  });
+  $("#odysseus-replay-source").href = odysseus.url;
+  $("#odysseus-replay").addEventListener("click", () => {
+    if (!field("required").reportValidity() || !field("receiver").reportValidity()) return;
+    selectSite(odysseus, odysseus.id);
+    fillPeriod(odysseusReplay);
+    loadAnalysis(queryUrl(odysseus.lat, odysseus.lon, odysseusReplay.start, odysseusReplay.hours));
   });
   $("#compare").addEventListener("click", compare);
   field("receiver").addEventListener("input", updateVisibilityMap);

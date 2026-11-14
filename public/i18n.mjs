@@ -96,6 +96,8 @@ const messages = {
   requiredInput: ["Hours needed for operations", "Нужно для операций, ч"],
   calculate: ["Calculate", "Рассчитать"],
   demo: ["Open preset scenario", "Открыть готовый сценарий"],
+  odysseusReplay: ["Replay Odysseus landing", "Посадка Odysseus: исторический сценарий"],
+  odysseusReplayCaption: ["IM-1 · {time} · First {hours} h of modeled illumination and Earth visibility.", "IM-1 · {time} · Модельная реконструкция освещения и видимости Земли за первые {hours} ч."],
   compare: ["Compare with another site", "Сравнить с другой площадкой"],
   hideComparison: ["Hide comparison", "Скрыть сравнение"],
   next: ["Go to next viable start", "К ближайшему старту"],
