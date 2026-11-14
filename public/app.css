@@ -1,4 +1,35 @@
 [hidden] { display: none !important; }
+.site-comparison { scroll-margin-top: 24px; }
+.comparison-points, .comparison-results { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 20px; }
+.comparison-points fieldset { min-width: 0; display: flex; flex-wrap: wrap; gap: 12px; align-items: end; border: 1px solid var(--edge); padding: 16px; border-radius: 4px; }
+.comparison-points legend { color: var(--green); font-size: 18px; padding: 0 8px; }
+.comparison-points label { flex: 1 1 130px; min-width: 0; }
+.comparison-points input { width: 100%; }
+.comparison-parameters { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 20px; }
+.comparison-parameters input[type=number] { width: 130px; }
+.site-comparison button { min-height: 44px; border: 1px solid var(--edge); border-radius: 4px; padding: 8px 12px; color: var(--green); background: #d9efad0b; }
+.site-comparison button:hover:enabled { background: #d9efad20; }
+.site-comparison button:disabled { opacity: .6; cursor: wait; }
+.site-comparison select:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.comparison-result { min-width: 0; border-top: 2px solid var(--green); padding: 8px 0; overflow-wrap: anywhere; }
+.comparison-result:nth-child(2) { border-color: #bbaadf; }
+.comparison-result h4 { font: 16px/1.6 var(--mono); margin: 12px 0; }
+.comparison-result p { font-size: 14px; }
+.comparison-result dt { color: #c1caba; font-size: 14px; }
+.comparison-result dd { margin: 6px 0 18px; font: 16px/1.5 var(--mono); }
+.comparison-result li { margin-bottom: 12px; font: 13px/1.6 var(--mono); }
+.comparison-result ul { list-style: none; padding: 0; }
+.comparison-result a { font-size: 13px; }
+.comparison-window { fill: #c7d2bc35; }
+#comparison-plot { margin: 24px 0; }
+#comparison-plot svg { width: 100%; display: block; }
+#comparison-plot text { fill: #ced5cb; font: 12px var(--mono); }
+.comparison-result .window-clipped { color: #f2c675; }
+@media (max-width: 760px) {
+  .comparison-points, .comparison-results { grid-template-columns: minmax(0, 1fr); }
+  .site-comparison { padding: 16px; }
+  .comparison-parameters label { max-width: 100%; }
+}
 .animation-note { flex-basis: 100%; text-align: center; color: #b9c6ae; font-size: 12px; }
 
 body { font-size: 16px; }

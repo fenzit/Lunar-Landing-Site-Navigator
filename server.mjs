@@ -25,6 +25,7 @@ const browserLibraries = new Set([
   "/lib/lunar-scatter.mjs",
   "/lib/visibility-batch.mjs",
   "/lib/start-search.mjs",
+  "/lib/site-comparison.mjs",
 ]);
 const types = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
