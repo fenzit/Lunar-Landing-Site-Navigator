@@ -2,6 +2,7 @@ import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs
 import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
+import { renderWindowTable } from './window-table.mjs';
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { horizonAt } from '/lib/terrain-math.mjs';
 
@@ -160,6 +161,7 @@ function resetAnalysis() {
   requestId++;
   compareId++;
   analysis = comparison = currentAngles = null;
+  renderWindows();
   $("#compare").textContent = t("compare");
   slider.disabled = $("#play").disabled = $("#reset").disabled = $("#compare").disabled = true;
   $("#sun-signal").classList.remove("lost");
@@ -218,7 +220,17 @@ function drawPlots() {
   renderTime();
 }
 
+function renderWindows() {
+  renderWindowTable($('#visibility-windows'), analysis, required, offset => {
+    stopPlayback();
+    slider.value = offset;
+    renderTime();
+    slider.focus();
+  });
+}
+
 function renderAnalysisText() {
+  renderWindows();
   if (!analysis) return;
   const data = analysis;
   const { start, end, stepMinutes } = data.period;
@@ -437,6 +449,7 @@ async function init() {
     if (!event.target.validity.valid) return;
     required = event.target.valueAsNumber;
     $("#required-display").textContent = required.toLocaleString(language);
+    renderWindows();
     drawPlots();
   });
   slider.addEventListener("input", () => { stopPlayback(); renderTime(); });
