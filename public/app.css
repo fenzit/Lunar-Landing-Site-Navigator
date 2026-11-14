@@ -234,9 +234,11 @@ html[lang=en] .intro h1 { font-size: clamp(34px, 3.8vw, 62px); letter-spacing: -
 .saved-calculations .calculation-cell small { max-width: none; overflow-wrap: anywhere; }
 .saved-calculations tr[data-active=true] { background: #d9efad08; }
 .saved-calculations tr[data-active=true] .calculation-cell b { color: var(--green); }
-.saved-calculations .saved-window-value { min-height: 9em; }
+.saved-calculations tr[data-windows-expanded=true] .saved-window-value { min-height: 9em; }
+.saved-calculations tr[data-windows-expanded=false] .saved-window-value + .saved-window-value { display: none; }
 .saved-window-value + .saved-window-value { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--edge); }
 .history-open { margin-top: 12px; min-height: 44px; border: 1px solid var(--edge); border-radius: 4px; background: #0b100e; padding: 8px 12px; font: 14px/1.5 Inter,"Segoe UI",sans-serif; }
+.history-toggle { display: block; margin-top: 8px; }
 .history-open[aria-pressed=true] { color: var(--green); border-color: #d9efad80; }
 .history-open:hover { background: #d9efad16; }
 .history-open:active { background: #d9efad24; }

@@ -53,6 +53,8 @@ export function savedCalculations(records, activeId, required) {
 }
 
 export function renderHistoryTable(container, records, options) {
+  const expanded = new Set(Array.from(container.querySelectorAll('[data-windows-expanded="true"]'),
+    row => row.dataset.calculation));
   container.replaceChildren();
   if(!records.length) return;
   const scroll = document.createElement('div');
@@ -91,6 +93,20 @@ export function renderHistoryTable(container, records, options) {
     if(!record.rows.length) {
       const empty=cell(row,t('windowsEmpty'));empty.colSpan=5;
       continue;
+    }
+    if (record.rows.length > 1) {
+      const toggle = document.createElement('button');
+      toggle.type = 'button';
+      toggle.className = 'history-open history-toggle';
+      row.dataset.calculation = record.id;
+      function setExpanded(show) {
+        row.dataset.windowsExpanded = String(show);
+        toggle.setAttribute('aria-expanded', String(show));
+        toggle.textContent = show ? t('historyCollapseWindows') : t('historyExpandWindows', { count: record.rows.length - 1 });
+      }
+      setExpanded(expanded.has(record.id));
+      toggle.addEventListener('click', () => setExpanded(toggle.getAttribute('aria-expanded') === 'false'));
+      label.append(toggle);
     }
     const columns=Array.from({length:5},()=>cell(row,''));
     for(const [index,window] of record.rows.entries()) {
