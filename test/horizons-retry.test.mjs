@@ -58,10 +58,11 @@ test('a temporary HTTP 503 retries without parallel JPL requests', async context
 });
 
 test('permanent HTTP errors are not retried', async context => {
-  let calls=0;
-  context.mock.method(globalThis,'fetch',async()=>{calls++;return {ok:false,status:400};});
+  let calls=0,cancelled=0;
+  context.mock.method(globalThis,'fetch',async()=>{calls++;return {ok:false,status:400,body:{cancel:async()=>{cancelled++;}}};});
   await assert.rejects(getAnalysis({...query,testCase:'bad-http'}),{errorCode:'horizonsHttp',params:{status:400}});
   assert.equal(calls,1);
+  assert.equal(cancelled,1);
 });
 
 test('exhausted timeouts are bounded and never cache a partial calculation', async context => {
@@ -87,4 +88,19 @@ test('a long Retry-After is respected by returning the error instead of retrying
   });
   await assert.rejects(getAnalysis({...query,testCase:'rate-limit'}),{errorCode:'horizonsHttp',params:{status:429}});
   assert.equal(calls,1);
+});
+
+test('retry a failed Horizons download without repeating a completed target',async context=>{
+  const calls=[];
+  context.mock.method(globalThis,'fetch',async url=>{
+    const target=url.searchParams.get('COMMAND')==="'10'"?'sun':'earth';
+    calls.push(target);
+    if(calls.length===2) throw new TypeError('Connection reset while downloading');
+    return Response.json(records[target].response);
+  });
+  const result=await getAnalysis({...query,testCase:'completed-target'});
+  assert.equal(result.samples.length,337);
+  assert.deepEqual(calls,['sun','earth','earth']);
+  assert.equal((await getAnalysis({...query,testCase:'completed-target'})).source.mode,'cache');
+  assert.equal(calls.length,3);
 });
