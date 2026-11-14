@@ -1,6 +1,7 @@
 const messages = {
   mapTitle: ["Local visibility map", "Карта видимости вокруг площадки"],
   mapCalculate: ["Calculate at slider time", "Рассчитать на время ползунка"],
+  mapRetry: ["Retry missing points", "Повторить для точек без данных"],
   mapCancel: ["Cancel", "Отменить"],
   mapNorth: ["↑ Local north", "↑ Местный север"],
   mapCenter: ["Landing site", "Площадка посадки"],
@@ -13,7 +14,7 @@ const messages = {
   mapWaiting: ["Pending", "Ожидает расчёта"],
   mapSkipped: ["Not calculated", "Не рассчитано"],
   mapProgress: ["Processed {completed}/{total} points", "Обработано точек: {completed}/{total}"],
-  mapDone: ["Processed {total} points", "Точек обработано: {total}"],
+  mapDone: ["Data available for {available}/{total} points", "Данные получены для {available} из {total} точек"],
   mapCancelled: ["Cancelled after {completed}/{total} points", "Отменено. Обработано точек: {completed}/{total}"],
   mapStale: ["Showing the earlier calculation. Recalculate to use the current selection.", "Показан предыдущий расчёт. Пересчитайте для текущих параметров."],
   mapSnapshot: ["{time} · Center {center} · Equipment {height} m · Grid spacing {spacing} m", "{time} · Центр {center} · Аппаратура {height} м · Шаг сетки {spacing} м"],

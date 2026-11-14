@@ -29,6 +29,7 @@ function coordinates(point) {
 
 export function createVisibilityMap(root, { date, loadPoint, describeError }) {
   const calculate = root.querySelector("#map-calculate");
+  const retry = root.querySelector("#map-retry");
   const cancel = root.querySelector("#map-cancel");
   const grid = root.querySelector("#visibility-grid");
   const snapshotLabel = root.querySelector("#map-snapshot");
@@ -39,7 +40,7 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
   const resultPanel = root.querySelector("#map-result");
 
   let current = {}, snapshot, job;
-  let cells = [], selected = centerIndex, completed = 0;
+  let cells = [], selected = centerIndex;
 
   function updateButtons() {
     const running = Boolean(job) && !job.signal.aborted;
@@ -50,6 +51,7 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
       current.analysis !== snapshot.analysis || current.time !== snapshot.time || current.height !== snapshot.height
     );
     stale.hidden = !outdated;
+    retry.hidden = !snapshot || outdated || Boolean(job) || cells.every(({ result }) => result?.bodies);
   }
 
   function renderPoint() {
@@ -74,8 +76,10 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
     snapshotLabel.textContent = t("mapSnapshot", {
       time: date(snapshot.time), center: coordinates(snapshot.analysis.site), height: snapshot.height, spacing,
     });
+    const completed = cells.filter(({ result }) => result).length;
+    const available = cells.filter(({ result }) => result?.bodies).length;
     const status = completed === cells.length ? "mapDone" : job && !job.signal.aborted ? "mapProgress" : "mapCancelled";
-    progress.textContent = t(status, { completed, total: cells.length });
+    progress.textContent = t(status, { completed, available, total: cells.length });
     for (const [index, { point, result, button }] of cells.entries()) {
       const state = pointState(result, Boolean(job) && !job.signal.aborted);
       button.dataset.state = state;
@@ -87,12 +91,10 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
     renderPoint();
   }
 
-  calculate.addEventListener("click", async () => {
+  calculate.addEventListener("click", () => {
     snapshot = current;
-    const { analysis, time, height } = snapshot;
-    const points = visibilityGrid(analysis.site, spacing);
+    const points = visibilityGrid(snapshot.analysis.site, spacing);
     selected = centerIndex;
-    completed = 0;
     cells = points.map((point, index) => {
       const button = document.createElement("button");
       button.type = "button";
@@ -105,20 +107,26 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
     });
     grid.replaceChildren(...cells.map(cell => cell.button));
     resultPanel.hidden = snapshotLabel.hidden = progress.hidden = false;
+    const orderedCells = [cells[centerIndex], ...cells.filter((_, index) => index !== centerIndex)];
+    run(orderedCells);
+  });
 
+  async function run(pending) {
+    const { analysis, time, height } = snapshot;
+    const center = cells[centerIndex].point;
+    const byPoint = new Map(pending.map(cell => [cell.point, cell]));
+    for (const cell of pending) cell.result = undefined;
     job = new AbortController();
     render();
     cancel.focus({ preventScroll: true });
-    const orderedPoints = [points[centerIndex], ...points.filter((_, index) => index !== centerIndex)];
     try {
-      await runVisibilityBatch(orderedPoints, time, (point, signal) =>
-        point === points[centerIndex] && height === analysis.terrain.receiverHeight
+      await runVisibilityBatch(pending.map(cell => cell.point), time, (point, signal) =>
+        point === center && height === analysis.terrain.receiverHeight
           ? analysis
           : loadPoint(point, snapshot, signal), {
         signal: job.signal,
         onPoint: result => {
-          cells[points.indexOf(result.point)].result = result;
-          completed++;
+          byPoint.get(result.point).result = result;
           render();
         },
       });
@@ -126,8 +134,13 @@ export function createVisibilityMap(root, { date, loadPoint, describeError }) {
       const restoreFocus = document.activeElement === cancel;
       job = null;
       render();
-      if (restoreFocus && !calculate.disabled) calculate.focus({ preventScroll: true });
+      const nextAction = retry.hidden ? calculate : retry;
+      if (restoreFocus && !nextAction.disabled) nextAction.focus({ preventScroll: true });
     }
+  }
+
+  retry.addEventListener("click", () => {
+    run(cells.filter(({ result }) => !result?.bodies));
   });
   cancel.addEventListener("click", () => {
     job?.abort();
