@@ -3,6 +3,7 @@ import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
+import { horizonAt } from '/lib/terrain-math.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -81,6 +82,7 @@ function queryUrl(lat, lon, start, hours) {
   const params = periodParams(start, hours);
   params.set("lat_deg", lat);
   params.set("lon_east_deg", lon);
+  params.set('receiver_height_m',field('receiver').value);
   return `/api/analysis?${params}`;
 }
 
@@ -177,9 +179,9 @@ function fillPeriod() {
 }
 
 function updateSignal(name, el, az) {
-  const visibility = t(el > 0 ? "above" : el < 0 ? "below" : "onHorizon");
-  $(`#${name}-signal`).classList.toggle("lost", el <= 0);
-  $(`#${name}-detail`).textContent = `${angle(el)} · ${visibility}\n${t("azimuth")} ${az.toFixed(1)}°`;
+  const horizon=analysis?.terrain?horizonAt(analysis.terrain.horizon,az):0,clearance=el-horizon;
+  $(`#${name}-signal`).classList.toggle("lost", clearance <= 0);
+  $(`#${name}-detail`).textContent = `${angle(el)} · ${t(clearance>0?'terrainVisible':'terrainBlocked')}\n${t("azimuth")} ${az.toFixed(1)}° · ${t('localHorizon')} ${angle(horizon)}`;
 }
 
 function renderTime() {
@@ -235,6 +237,13 @@ function renderAnalysisText() {
     link.href = record.url;
     link.textContent = `${t(target)} (API ${record.version})`;
     provenance.append(link, ` · ${t("retrieved", { time: date(Date.parse(record.retrievedUtc)) })} `);
+  }
+  const terrainNote=$('#terrain-provenance');terrainNote.replaceChildren();
+  if(data.terrain) {
+    terrainNote.append(t('terrainLimits',{grid:Math.round(data.terrain.quality.gridMeters),height:data.terrain.receiverHeight})+' ');
+    for(const source of data.terrain.sources) {
+      const link=document.createElement('a');link.href=source.citation;link.textContent=source.name;terrainNote.append(link,' · ');
+    }
   }
 }
 
@@ -312,6 +321,7 @@ async function showView(next) {
       renderer ??= createScene($("#viewport"), {
         pick: pickSite,
         message: showSceneMessage,
+        moved: coords=>{selectSite(coords,'custom',false);form.requestSubmit();},
       });
       renderSite(true);
       renderer.setAngles(currentAngles);
@@ -411,7 +421,7 @@ async function init() {
     const preset = config.sites.find(point => point.id === site.id) || config.sites[0];
     fillPeriod();
     selectSite(preset, preset.id);
-    loadAnalysis(`/api/demo/${preset.id}`);
+    loadAnalysis(`/api/demo/${preset.id}?receiver_height_m=${field('receiver').value}`);
   });
   $("#compare").addEventListener("click", compare);
   $("#next").addEventListener("click", () => {

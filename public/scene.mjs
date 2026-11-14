@@ -6,6 +6,7 @@ import { sites } from "/lib/sites.mjs";
 import { moonMaterial } from "./moon-material.mjs";
 import { createSun } from "./sun.mjs";
 import { t } from "./i18n.mjs";
+import { createSurface } from './surface.mjs';
 
 const rad = Math.PI / 180;
 const relief = 3;
@@ -96,15 +97,14 @@ function labelGlobeBody(body, name, camera) {
 
 function makeGround() {
   const scene = new THREE.Scene();
-  const camera = new THREE.PerspectiveCamera(49, 1, 0.1, 1200);
-  camera.position.set(0, 1.5, 0);
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(1800, 1800),
-    new THREE.MeshStandardMaterial({ color: 0x494c47, roughness: 1 }));
-  ground.rotation.x = -Math.PI / 2;
-  scene.add(ground, new THREE.HemisphereLight(0xeee8da, 0x3c4240, 2));
-  const light = new THREE.DirectionalLight(0xfaf0d7, 2);
-  light.position.set(4, 6, -4);
-  scene.add(light);
+  const camera = new THREE.PerspectiveCamera(62, 1, .1, 400000);
+  camera.position.set(0, 1.7, 0);
+  scene.add(new THREE.HemisphereLight(0xd8dfeb, 0x34302b, .65));
+  const light = new THREE.DirectionalLight(0xfff4de, 3.1);
+  light.castShadow=true;light.shadow.mapSize.set(2048,2048);
+  Object.assign(light.shadow.camera,{left:-90,right:90,top:90,bottom:-90,near:1,far:4500});
+  light.shadow.normalBias=.12;light.shadow.bias=-.00002;
+  scene.add(light,light.target);
 
   const lander = new THREE.Group();
   const foil = new THREE.MeshStandardMaterial({ color: 0x998058, metalness: .23, roughness: .65 });
@@ -132,17 +132,20 @@ function makeGround() {
   lander.add(dish);
   scene.add(lander);
 
-  const solar = createSun(4.3);
+  lander.traverse(child=>{if(child.isMesh) child.castShadow=child.receiveShadow=true;});
+  lander.visible=false;
+  const solar = createSun(462);
   const objects = {
     sun: solar.mesh,
-    earth: new THREE.Mesh(new THREE.SphereGeometry(4.7, 24, 16), new THREE.MeshStandardMaterial({ color: 0x5b96c0, emissive: 0x1d4160 })),
+    earth: new THREE.Mesh(new THREE.SphereGeometry(1660, 48, 32), new THREE.MeshStandardMaterial({ color: 0xffffff, roughness:1 })),
   };
   scene.add(objects.sun, objects.earth);
-  return { scene, camera, objects, lander, updateSun: solar.update };
+  return { scene, camera, objects, lander, light, updateSun: solar.update };
 }
 
-export function createScene(root, { pick, message }) {
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+export function createScene(root, { pick, message, moved }) {
+  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, logarithmicDepthBuffer:true });
+  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   const canvas = renderer.domElement;
   canvas.tabIndex = 0;
@@ -168,11 +171,12 @@ export function createScene(root, { pick, message }) {
   const axis = new THREE.Vector3(0, 1, 0);
   const markerWorld = new THREE.Vector3();
   const ground = makeGround();
+  const surfaceView=createSurface(ground,canvas,{message:key=>{if(view==='ground') message(key);},draw:()=>{if(view==='ground') render();},moved});
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
   const moonLabel = makeLabel(root, t("moon"), "body-label");
-  const skyLabels = { sun: makeLabel(root, t("sun")), earth: makeLabel(root, t("earth")) };
+  const skyLabels = { sun: makeLabel(root, t("sun"),'ground-body-label'), earth: makeLabel(root, t("earth"),'ground-body-label') };
   const markers = new THREE.Group();
   lunarFrame.add(markers);
   const ray = new THREE.Raycaster();
@@ -248,6 +252,7 @@ export function createScene(root, { pick, message }) {
         bodies.earth.mesh.material.color.set(0xffffff);
         bodies.earth.mesh.material.map = map;
         bodies.earth.mesh.material.needsUpdate = true;
+        ground.objects.earth.material.map=map;ground.objects.earth.material.needsUpdate=true;
         if (view === "globe") render();
       }).catch(() => {});
     } catch {
@@ -259,18 +264,17 @@ export function createScene(root, { pick, message }) {
     for (const key of ["sun", "earth"]) {
       const object = ground.objects[key];
       const elevation = angles?.[`${key}El`];
-      object.visible = elevation > 0;
+      object.visible = Number.isFinite(elevation);
       if (object.visible) {
-        object.position.copy(vector(skyDirection(angles[`${key}Az`], elevation)).multiplyScalar(165)).add(ground.camera.position);
+        object.position.copy(vector(skyDirection(angles[`${key}Az`], elevation)).multiplyScalar(100000)).add(ground.camera.position);
       }
     }
     if (faceTarget && angles) {
       yaw = angles[`${faceTarget}Az`];
-      pitch = Math.max(0, angles[`${faceTarget}El`] * .6);
+      pitch = THREE.MathUtils.clamp(angles[`${faceTarget}El`]*.6,-45,75);
     }
     ground.camera.lookAt(ground.camera.position.clone().add(vector(skyDirection(yaw, pitch))));
-    ground.lander.position.copy(vector(skyDirection(yaw + 16, 0)).multiplyScalar(4.5));
-    ground.lander.rotation.y = -yaw * rad;
+    surfaceView.update(angles,yaw);
   }
 
   function render() {
@@ -296,6 +300,7 @@ export function createScene(root, { pick, message }) {
     } else {
       updateGround();
       ground.updateSun(seconds);
+      ground.objects.earth.rotation.y=seconds*.18;
       renderer.render(ground.scene, ground.camera);
       for (const [key, object] of Object.entries(ground.objects)) {
         projectedLabel(skyLabels[key], object.position, ground.camera, object.visible);
@@ -336,11 +341,11 @@ export function createScene(root, { pick, message }) {
 
   function animate(now = performance.now()) {
     frame = 0;
-    if (view !== "globe" || document.hidden) { lastFrame = 0; return; }
+    if (view === "chart" || document.hidden) { lastFrame = 0; return; }
     const dt = lastFrame ? Math.min((now-lastFrame)/1000, .05) : 0;
     lastFrame = now;
     if (animated) seconds += dt;
-    updateBodies();
+    if(view==='globe') updateBodies();
     if (flight) {
       const t = reducedMotion.matches ? 1 : Math.min(1, (now-flight.start)/850);
       const ease = t*t*(3-2*t);
@@ -348,13 +353,13 @@ export function createScene(root, { pick, message }) {
       controls.target.lerpVectors(flight.fromTarget, flight.target, ease);
       if (t === 1) flight = null;
     }
-    controls.update(dt);
+    if(view==='globe') controls.update(dt);
     render();
-    if (animated || controls.autoRotate || flight) frame = requestAnimationFrame(animate);
+    if (animated || (view==='globe'&&(controls.autoRotate || flight))) frame = requestAnimationFrame(animate);
     else lastFrame = 0;
   }
 
-  function startAnimation() { if (!frame && view === "globe" && !document.hidden) frame = requestAnimationFrame(animate); }
+  function startAnimation() { if (!frame && view !== "chart" && !document.hidden) frame = requestAnimationFrame(animate); }
   function focus(key, smooth = true) {
     focusBody = key;
     const target = key === "system" || key === "moon" ? new THREE.Vector3() : bodies[key].mesh.position.clone();
@@ -409,6 +414,7 @@ export function createScene(root, { pick, message }) {
   canvas.addEventListener("pointerdown", event => {
     if (!event.isPrimary || event.button !== 0) { pointer = null; return; }
     pointer = { id: event.pointerId, x: event.clientX, y: event.clientY, dragged: false };
+    canvas.focus({preventScroll:true});
     if (view === "ground") canvas.setPointerCapture(event.pointerId);
   });
   canvas.addEventListener("pointermove", event => {
@@ -418,7 +424,7 @@ export function createScene(root, { pick, message }) {
     if (view === "ground" && pointer.dragged) {
       faceTarget = null;
       yaw -= dx * .21;
-      pitch = THREE.MathUtils.clamp(pitch + dy * .17, -23, 75);
+      pitch = THREE.MathUtils.clamp(pitch + dy * .17, -80, 85);
       pointer.x = event.clientX;
       pointer.y = event.clientY;
       render();
@@ -458,19 +464,23 @@ export function createScene(root, { pick, message }) {
   return {
     show(next) {
       view = next;
+      canvas.setAttribute('aria-label',t(view==='ground'?'surfaceSceneLabel':'sceneLabel'));
       for (const label of [...labels, pickedLabel, moonLabel, ...Object.values(skyLabels),
         ...Object.values(bodies).map(body => body.label)]) label.hidden = true;
       controls.enabled = view === "globe";
+      surfaceView.show(view==='ground');
       if (view === "globe" && !loading) loading = loadGlobe();
       if (view === "ground") {
-        faceTarget = angles ? (angles.sunEl > 0 ? "sun" : "earth") : null;
-        message("landerNote");
+        faceTarget = null;
+        yaw=25;pitch=-5;
+        startAnimation();
       }
       resize();
       if (view === "globe") { if (focusBody === "system") focus("system", false); startAnimation(); }
     },
     setSite(site, focus) {
       selected = site;
+      surfaceView.setSite(site);
       pins.at(-1).site = site;
       pickedLabel.textContent = site.name;
       if (focus && focusBody === "moon") {
@@ -484,8 +494,9 @@ export function createScene(root, { pick, message }) {
       render();
     },
     localize() {
+      surfaceView.localize();
       moonLabel.textContent = t("moon");
-      canvas.setAttribute("aria-label", t("sceneLabel"));
+      canvas.setAttribute("aria-label", t(view==='ground'?'surfaceSceneLabel':'sceneLabel'));
       for (const [key, label] of Object.entries(skyLabels)) label.textContent = t(key);
       render();
     },

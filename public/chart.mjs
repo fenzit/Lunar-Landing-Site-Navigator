@@ -1,5 +1,6 @@
 import { suitableStarts } from "/lib/windows.mjs";
 import { t } from "./i18n.mjs";
+import { clearanceSamples } from '/lib/terrain-math.mjs';
 
 const ns = "http://www.w3.org/2000/svg";
 
@@ -19,7 +20,10 @@ export function drawChart(container, analysis, required, comparison = null) {
   const firstRow = bottom + 45, rowHeight = compact ? 21 : 25;
   const { start, end } = analysis.period;
   const x = time => left + (time - start) / (end - start) * (right - left);
-  const values = analysis.samples.flatMap(sample => [sample.sunEl, sample.earthEl]);
+  const terrain=Boolean(analysis.terrain);
+  const samples=terrain?clearanceSamples(analysis.samples,analysis.terrain.horizon):analysis.samples;
+  const keys=terrain?['sunClearance','earthClearance']:['sunEl','earthEl'];
+  const values = samples.flatMap(sample => keys.map(key=>sample[key]));
   const min = Math.floor(Math.min(-1, ...values) / 2) * 2;
   const max = Math.ceil(Math.max(1, ...values) / 2) * 2;
   const y = elevation => bottom - (elevation - min) / (max - min) * (bottom - top);
@@ -33,8 +37,8 @@ export function drawChart(container, analysis, required, comparison = null) {
     add("line", { x1: left, x2: right, y1: y(elevation), y2: y(elevation), class: elevation === 0 ? "horizon-line" : "plot-grid" });
     add("text", { x: left - 10, y: y(elevation) + 4, "text-anchor": "end" }, `${elevation}°`);
   }
-  for (const [key, className] of [["sunEl", "sun-line"], ["earthEl", "earth-line"]]) {
-    const points = analysis.samples.map(sample => `${x(sample.t)},${y(sample[key])}`).join(" ");
+  for (const [key, className] of [[keys[0], "sun-line"], [keys[1], "earth-line"]]) {
+    const points = samples.map(sample => `${x(sample.t)},${y(sample[key])}`).join(" ");
     add("polyline", { points, class: className });
   }
   const ticks = width < 390 ? [0, 1] : compact ? [0, 0.5, 1] : [0, 0.25, 0.5, 0.75, 1];

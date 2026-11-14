@@ -1,17 +1,19 @@
 import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
-import { AnalysisError, demoAnalysis, getAnalysis, getSky, normalizePeriod, normalizeQuery } from "./lib/horizons.mjs";
+import { AnalysisError, getAnalysis, getSky, normalizeCoordinates, normalizePeriod, normalizeQuery } from "./lib/horizons.mjs";
+import { applyTerrain, getTerrain } from './lib/terrain.mjs';
+import './lib/config.mjs';
 import { demoHours, demoStart, demoStep, sites } from "./lib/sites.mjs";
 import { apiErrorMessage } from "./lib/api-errors.mjs";
 
-const offline = process.argv.includes("--offline");
+const offline = false;
 const staticRoots = [
   ["/three/", resolve("node_modules/three")],
   ["/lib/", resolve("lib")],
   ["/", resolve("public")],
 ];
-const browserLibraries = new Set(["/lib/windows.mjs", "/lib/geography.mjs", "/lib/sites.mjs", "/lib/api-errors.mjs"]);
+const browserLibraries = new Set(["/lib/windows.mjs", "/lib/geography.mjs", "/lib/sites.mjs", "/lib/api-errors.mjs", '/lib/terrain-math.mjs']);
 const types = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -36,14 +38,24 @@ const server = createServer(async (req, res) => {
       return json(res, { sites, offline, demo: { start: demoStart, hours: demoHours, step: demoStep } });
     }
     if (path === "/api/analysis") {
-      return json(res, await getAnalysis(normalizeQuery(url.searchParams), { offline }));
+      const query=normalizeQuery(url.searchParams);
+      const terrain=await getTerrain(query,Number(url.searchParams.get('receiver_height_m')??2));
+      const data=await getAnalysis({...query,altitudeKm:Number(((terrain.site.elevationMeters+terrain.receiverHeight)/1000).toFixed(6))});
+      return json(res,applyTerrain(data,terrain));
+    }
+    if(path==='/api/terrain') {
+      return json(res,await getTerrain(normalizeCoordinates(url.searchParams),Number(url.searchParams.get('receiver_height_m')??2)));
     }
     if (path === "/api/sky") {
       return json(res, await getSky(normalizePeriod(url.searchParams), { offline }));
     }
     if (path.startsWith("/api/demo/")) {
       const site = sites.find(site => path === `/api/demo/${site.id}`);
-      if (site) return json(res, await demoAnalysis(site));
+      if (site) {
+        const query={lat:site.lat,lon:site.lon,start:Date.parse(demoStart),end:Date.parse(demoStart)+demoHours*3600000,step:demoStep};
+        const terrain=await getTerrain(site,Number(url.searchParams.get('receiver_height_m')??2));
+        return json(res,applyTerrain(await getAnalysis({...query,altitudeKm:Number(((terrain.site.elevationMeters+terrain.receiverHeight)/1000).toFixed(6))}),terrain));
+      }
     }
     if (path.startsWith("/api/")) return errorResponse(res, "route", 404);
     if (path.startsWith("/lib/") && !browserLibraries.has(path)) return errorResponse(res, "file", 404);

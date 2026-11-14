@@ -5,11 +5,16 @@ export function createSun(radius) {
   const time = { value: 0 };
   const material = new THREE.ShaderMaterial({
     uniforms: { time }, toneMapped: false,
-    vertexShader: `varying vec3 point; varying vec3 normalView; varying vec3 viewDirection;
+    vertexShader: `#include <common>
+      #include <logdepthbuf_pars_vertex>
+      varying vec3 point; varying vec3 normalView; varying vec3 viewDirection;
       void main() { point = normalize(position); vec4 p = modelViewMatrix * vec4(position, 1.0);
         normalView = normalize(normalMatrix * normal); viewDirection = normalize(-p.xyz);
-        gl_Position = projectionMatrix * p; }`,
+        gl_Position = projectionMatrix * p;
+        #include <logdepthbuf_vertex>
+      }`,
     fragmentShader: `precision highp float;
+      #include <logdepthbuf_pars_fragment>
       uniform float time; varying vec3 point; varying vec3 normalView; varying vec3 viewDirection;
       float hash(vec3 p) { return fract(sin(dot(p, vec3(127.1,311.7,74.7))) * 43758.5453); }
       float noise(vec3 p) { vec3 i=floor(p), f=fract(p); f=f*f*(3.0-2.0*f);
@@ -20,7 +25,9 @@ export function createSun(radius) {
         float cells=fbm(p*38.0+flow*2.0+time*0.022);
         float limb=pow(max(0.0,dot(normalize(normalView),normalize(viewDirection))),0.28);
         vec3 color=mix(vec3(1.0,0.22,0.018),vec3(1.0,0.84,0.38),smoothstep(0.18,0.8,cells));
-        color*=0.64+0.48*limb; gl_FragColor=vec4(color,1.0); }`,
+        color*=0.64+0.48*limb; gl_FragColor=vec4(color,1.0);
+        #include <logdepthbuf_fragment>
+      }`,
   });
   const mesh = new THREE.Mesh(new THREE.SphereGeometry(radius, 64, 48), material);
   const canvas = document.createElement("canvas");

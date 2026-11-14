@@ -35,6 +35,21 @@
         <div class="sky-tools" id="sky-tools" hidden>
           <button id="face-sun" type="button" data-i18n="faceSun">Face Sun</button>
           <button id="face-earth" type="button" data-i18n="faceEarth">Face Earth</button>
+          <button id="surface-reset" type="button" data-i18n="returnSite">Return to site</button>
+          <button id="calculate-here" type="button" data-i18n="calculateHere" disabled>Calculate here</button>
+          <div class="surface-info">
+            <b data-i18n="surfaceReal">MEASURED TERRAIN · 1:1</b>
+            <span id="terrain-status" role="status"></span>
+            <span id="walk-position"></span>
+            <small data-i18n="walkHint">Drag to look · WASD to walk · Shift to move faster · Camera 1.7 m</small>
+          </div>
+          <div class="walk-controls" role="group" data-i18n-label="walking" aria-label="Walking">
+            <button type="button" data-walk="KeyW" data-i18n-label="walkForward" aria-label="Walk forward">↑</button>
+            <button type="button" data-walk="KeyA" data-i18n-label="walkLeft" aria-label="Walk left">←</button>
+            <button type="button" data-walk="KeyS" data-i18n-label="walkBack" aria-label="Walk back">↓</button>
+            <button type="button" data-walk="KeyD" data-i18n-label="walkRight" aria-label="Walk right">→</button>
+          </div>
+          <button id="terrain-retry" type="button" data-i18n="terrainRetry" hidden>Retry terrain</button>
         </div>
         <div class="scene-message" id="scene-message" role="status" hidden></div>
         <div id="main-plot" class="main-plot" hidden></div>
@@ -115,11 +130,12 @@
     <section class="analysis-panel" id="analysis" aria-labelledby="analysis-title">
       <h2 id="analysis-title" data-i18n="analysis">Analysis settings</h2>
       <form id="analysis-form">
-        <label><span data-i18n="latitude">Latitude, °</span><input name="lat" type="number" step="any" min="-89.999999" max="89.999999" required></label>
+        <label><span data-i18n="latitude">Latitude, °</span><input name="lat" type="number" step="any" min="-90" max="90" required></label>
         <label><span data-i18n="longitude">East longitude, °</span><input name="lon" type="number" step="any" min="-180" max="180" required></label>
         <label><span data-i18n="startUtc">Start, UTC</span><input name="start" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
         <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="1" step="1" required></label>
         <label><span data-i18n="requiredInput">Hours needed for operations</span><input name="required" id="required" type="number" min="0.25" step="0.25" value="4" required></label>
+        <label><span data-i18n="receiverHeight">Equipment height, m</span><input name="receiver" type="number" min="0" max="100" step="0.1" value="2" required></label>
         <button type="submit" class="play-button" data-i18n="calculate">Calculate</button>
       </form>
       <div class="analysis-actions">
@@ -133,6 +149,7 @@
       <details><summary data-i18n="sources">Sources and model limits</summary>
         <p id="provenance"></p>
         <p id="sky-provenance"></p>
+        <p id="terrain-provenance"></p>
         <p data-i18n="model">The 0° threshold applies to the centers of the Sun and Earth. The model estimates geometric visibility. Local shadows, eclipses, power generation, and radio link performance are outside its scope. The globe shows terrain at the resolution of its source map.</p>
         <p><a href="https://ssd-api.jpl.nasa.gov/doc/horizons.html">JPL Horizons</a> · <a href="https://svs.gsfc.nasa.gov/4720/">NASA CGI Moon Kit / LRO / LOLA</a> · <a href="https://pgda.gsfc.nasa.gov/products/67">SLDEM2015</a></p>
       </details>

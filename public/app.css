@@ -204,3 +204,13 @@ input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px 
 .experience .viewport { grid-row: 1; min-height: 320px; }
 .experience .viewport canvas { position: absolute; inset: 0; }
 .experience .map-tools { position: relative; grid-row: 2; left: auto; right: auto; bottom: auto; justify-content: center; padding-top: 12px; }
+.experience .sky-tools { position:relative;grid-row:2;inset:auto;justify-content:flex-start;padding:14px 0;gap:8px; }
+.surface-info { flex-basis:100%;display:grid;gap:6px;padding:12px 0;color:#d5d9d0;font:13px/1.5 var(--mono); }
+.surface-info b { color:var(--green);font-size:12px;letter-spacing:.06em; }
+.surface-info small { color:#adb6aa;font:13px/1.5 Inter,"Segoe UI",sans-serif; }
+.walk-controls { display:flex;gap:8px; }
+.walk-controls button { min-width:44px;touch-action:none;user-select:none; }
+#calculate-here { border-color:var(--green);color:var(--green); }
+.ground-body-label { transform:translate(-50%,14px); }
+.scene:has(#sky-tools:not([hidden])) .viewport { min-height:440px; }
+@media (max-width:760px) { .scene:has(#sky-tools:not([hidden])) .viewport { min-height:360px; } }

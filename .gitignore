@@ -6,3 +6,4 @@
 /lroc_color_16bit_srgb_4k.tif
 /SLDEM2015_256_SL_90S_90N_000_360_LY.JP2
 __pycache__/
+.env

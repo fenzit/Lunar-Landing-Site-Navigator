@@ -8,6 +8,11 @@
     "demo:build": "node scripts/build_demo.mjs",
     "test": "node --test"
   },
-  "engines": { "node": ">=22" },
-  "dependencies": { "three": "0.181.2" }
+  "engines": {
+    "node": ">=22"
+  },
+  "dependencies": {
+    "geotiff": "^3.0.5",
+    "three": "0.181.2"
+  }
 }
