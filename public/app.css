@@ -156,6 +156,27 @@ html[lang=en] .intro h1 { font-size: clamp(34px, 3.8vw, 62px); letter-spacing: -
 .analysis-panel summary { cursor: pointer; }
 #analysis-status { min-height: 1.6em; color: #d2deca; }
 #detail-plot { max-width: 840px; }
+.start-search { margin: 28px 0; padding: 24px; border: 1px solid var(--edge); border-radius: 6px; background: #0b100e; }
+.start-search h3 { margin: 0 0 12px; font-size: 20px; font-weight: 500; }
+.start-search > p { color: #c1caba; font-size: 14px; max-width: 85ch; }
+#search-form { display: flex; flex-wrap: wrap; align-items: end; gap: 14px; }
+.start-search label { display: grid; gap: 8px; font-size: 14px; color: #c4c6c0; }
+.start-search input, .start-search select { min-height: 44px; min-width: 0; border: 1px solid #ffffff35; border-radius: 4px; background: #08090a; color: var(--white); padding: 8px; font: 16px var(--mono); }
+.start-search input[type=datetime-local] { width: 230px; max-width: 100%; }
+#search-required { width: 150px; }
+#search-submit, #search-cancel { min-height: 44px; padding: 8px 16px; }
+#search-cancel { border: 1px solid var(--edge); border-radius: 4px; background: #08090a; }
+#search-status { min-height: 1.6em; }
+.search-order { max-width: 300px; margin: 16px 0; }
+.search-row-actions button + button { margin-top: 8px; }
+.search-row-actions button { display: block; }
+.search-empty { padding: 16px; border: 1px solid var(--edge); border-radius: 4px; }
+.start-search select:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+@media(max-width:760px) {
+  .start-search { padding: 16px; }
+  #search-form label, #search-form input { width: 100%; }
+  #search-form { align-items: stretch; }
+}
 .analysis-history { margin: 28px 0 32px; }
 .analysis-history h3 { font-size: 20px; font-weight: 500; margin: 0 0 10px; }
 .analysis-history p { color: #c1caba; font-size: 14px; margin: 0 0 16px; max-width: 80ch; }
