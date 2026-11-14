@@ -4,12 +4,12 @@ import { mergeVertices } from "three/addons/utils/BufferGeometryUtils.js";
 import { heightAt, moonCoordinates, moonDirection, skyDirection } from "/lib/geography.mjs";
 import { sites } from "/lib/sites.mjs";
 import { moonMaterial } from "./moon-material.mjs";
+import { t } from "./i18n.mjs";
 
 const rad = Math.PI / 180;
 const relief = 3;
 const referenceKm = 1737.4;
 const bodyDistance = 1.95;
-const bodyNames = { sun: "Солнце", earth: "Земля" };
 const vector = values => new THREE.Vector3(...values);
 const makeLabel = (root, text, className = "") => {
   const label = document.createElement("span");
@@ -56,7 +56,7 @@ function makeGlobeBodies(world, root) {
   world.add(sun, earth);
   return Object.fromEntries(Object.entries({ sun, earth }).map(([key, mesh]) => {
     mesh.visible = false;
-    return [key, { mesh, label: makeLabel(root, bodyNames[key], `body-label ${key}`) }];
+    return [key, { mesh, label: makeLabel(root, t(key), `body-label ${key}`) }];
   }));
 }
 
@@ -86,7 +86,7 @@ function labelGlobeBody(body, name, camera) {
   const scale = Math.max(Math.abs(local.x) / .82, Math.abs(local.y) / .76, .001);
   const x = local.x / scale, y = local.y / scale;
   const arrow = Math.abs(x) > Math.abs(y) ? (x > 0 ? "→" : "←") : (y > 0 ? "↑" : "↓");
-  label.textContent = local.z >= 0 ? `${name} · позади` : `${name} ${arrow}`;
+  label.textContent = local.z >= 0 ? `${name} · ${t("behind")}` : `${name} ${arrow}`;
   label.style.left = `${(x + 1) * 50}%`;
   label.style.top = `${(1 - y) * 50}%`;
   label.style.transform = "translate(-50%, -50%)";
@@ -143,7 +143,7 @@ export function createScene(root, { pick, message }) {
   renderer.setPixelRatio(Math.min(devicePixelRatio, 1.75));
   const canvas = renderer.domElement;
   canvas.tabIndex = 0;
-  canvas.setAttribute("aria-label", "3D-сцена. На глобусе используйте стрелки для вращения, плюс и минус для зума, Enter для выбора точки.");
+  canvas.setAttribute("aria-label", t("sceneLabel"));
   root.append(canvas);
 
   const world = new THREE.Scene();
@@ -163,7 +163,7 @@ export function createScene(root, { pick, message }) {
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
-  const skyLabels = { sun: makeLabel(root, "Солнце"), earth: makeLabel(root, "Земля") };
+  const skyLabels = { sun: makeLabel(root, t("sun")), earth: makeLabel(root, t("earth")) };
   const markers = new THREE.Group();
   world.add(markers);
   const ray = new THREE.Raycaster();
@@ -201,7 +201,7 @@ export function createScene(root, { pick, message }) {
   }
 
   async function loadGlobe() {
-    message("Загружаем глобус LRO и LOLA…");
+    message("globeLoading");
     try {
       const [map, north, south, reply] = await Promise.all([
         texture("/assets/moon.webp"), texture("/assets/lola-north.webp"),
@@ -227,7 +227,7 @@ export function createScene(root, { pick, message }) {
         if (view === "globe") render();
       }).catch(() => {});
     } catch {
-      if (view === "globe") message("Глобус недоступен. Можно выбрать координаты в параметрах анализа.");
+      if (view === "globe") message("globeUnavailable");
     }
   }
 
@@ -264,7 +264,7 @@ export function createScene(root, { pick, message }) {
         const visible = marker?.visible && marker.position.dot(camera.position) > marker.position.lengthSq();
         if (marker) projectedLabel(pin.label, marker.position, camera, visible);
       }
-      for (const [key, body] of Object.entries(bodies)) labelGlobeBody(body, bodyNames[key], camera);
+      for (const [key, body] of Object.entries(bodies)) labelGlobeBody(body, t(key), camera);
     } else {
       updateGround();
       renderer.render(ground.scene, ground.camera);
@@ -359,7 +359,7 @@ export function createScene(root, { pick, message }) {
       if (view === "globe" && !loading) loading = loadGlobe();
       if (view === "ground") {
         faceTarget = angles ? (angles.sunEl > 0 ? "sun" : "earth") : null;
-        message("Условная модель аппарата и размеры объектов");
+        message("landerNote");
       }
       resize();
       if (view === "globe" && controls.autoRotate && !frame) animate();
@@ -375,6 +375,11 @@ export function createScene(root, { pick, message }) {
         controls.update();
       }
       positionPins();
+      render();
+    },
+    localize() {
+      canvas.setAttribute("aria-label", t("sceneLabel"));
+      for (const [key, label] of Object.entries(skyLabels)) label.textContent = t(key);
       render();
     },
     setAngles(value) {
@@ -416,7 +421,7 @@ export function createScene(root, { pick, message }) {
         render();
         return slopeEnabled;
       } catch {
-        message("Текстура уклонов недоступна.");
+        message("slopeUnavailable");
         return false;
       }
     },

@@ -1,8 +1,8 @@
 import test from "node:test";
 import assert from "node:assert/strict";
-import { demoAnalysis, getAnalysis, getSky, normalizeQuery } from "../lib/horizons.mjs";
+import { demoAnalysis, getAnalysis, getSky, normalizePeriod, normalizeQuery } from "../lib/horizons.mjs";
 import { sites } from "../lib/sites.mjs";
-import { atTime, intersect, landingResult, minute, skyAtTime, suitableStarts, visibleWindows } from "../lib/windows.mjs";
+import { atTime, hour, intersect, landingResult, minute, skyAtTime, suitableStarts, visibleWindows } from "../lib/windows.mjs";
 import { moonCoordinates, moonDirection, skyDirection } from "../lib/geography.mjs";
 
 test("a shared window can begin and end between the same two samples", () => {
@@ -51,6 +51,24 @@ test("offline arbitrary coordinates do not reuse a nearby preset", async () => {
     duration_hours: "168", step_minutes: "30",
   }));
   await assert.rejects(getAnalysis(query, { offline: true }), { status: 503 });
+});
+
+test("analysis and globe accept 30 days at 30-minute intervals and reject oversized queries", () => {
+  const params = new URLSearchParams({
+    lat_deg: "-80.1276", lon_east_deg: "1.4367", start_utc: "2026-11-14T00:00Z",
+    duration_hours: "720", step_minutes: "30",
+  });
+  for (const normalize of [normalizePeriod, normalizeQuery]) {
+    const period = normalize(params);
+    assert.equal(period.end - period.start, 720 * hour);
+    assert.equal((period.end - period.start) / (period.step * minute) + 1, 1441);
+    for (const [hours, step] of [["721", "30"], ["720", "15"]]) {
+      const oversized = new URLSearchParams(params);
+      oversized.set("duration_hours", hours);
+      oversized.set("step_minutes", step);
+      assert.throws(() => normalize(oversized), { status: 400, errorCode: "period" });
+    }
+  }
 });
 
 test("lunar coordinates round trip near the seam, pole, and at both sites", () => {
