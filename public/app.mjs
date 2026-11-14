@@ -1,22 +1,27 @@
 import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs";
+import { apiErrorMessage } from "/lib/api-errors.mjs";
+import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
+import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
 const field = name => form.elements.namedItem(name);
 const slider = $("#time");
+field("hours").max = field("required").max = maxPeriodHours;
 const mobile = matchMedia("(max-width: 760px)");
 const viewInfo = {
-  globe: ["CAM 01", "ГЛОБУС · РЕЛЬЕФ LOLA ×3"],
-  ground: ["CAM 02", "ГОРИЗОНТ 0° · СХЕМА"],
-  chart: ["CAM 03", "ГРАФИК ВЫСОТ · UTC"],
+  globe: ["CAM 01", "globeCaption"],
+  ground: ["CAM 02", "groundCaption"],
+  chart: ["CAM 03", "chartCaption"],
 };
-const sourceNames = { demo: "Сохранённые данные", cache: "Локальный кэш", live: "Запрос к JPL" };
+const sourceKeys = { demo: "saved", cache: "cached", live: "live" };
+const sourceName = mode => t(sourceKeys[mode]);
 const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
 const date = t => `${new Date(t).toISOString().slice(0, 16).replace("T", " ")} UTC`;
 const duration = ms => {
   const m = Math.floor(ms / minute);
-  return ms > 0 && m === 0 ? "<1 мин" : `${Math.floor(m / 60)} ч ${String(m % 60).padStart(2, "0")} мин`;
+  return ms > 0 && m === 0 ? `<1 ${t("minutes")}` : `${Math.floor(m / 60)} ${t("hours")} ${String(m % 60).padStart(2, "0")} ${t("minutes")}`;
 };
 const angle = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(2)}°`;
 
@@ -26,17 +31,46 @@ let requestId = 0, compareId = 0, nextTime = null;
 let request, compareRequest;
 let required = 4, cursorUpdates = [], currentAngles;
 let sky, skyKey, skyRequest, skyError = false, globeTime;
+let statusMessage, sceneMessage;
+
+function requestError(error) {
+  if (!error.responseStatus) return t("requestFailed");
+  return apiErrorMessage(error.apiCode, error.apiParams, language)
+    ?? t("httpError", { status: error.responseStatus });
+}
 
 async function getJson(url, signal) {
   const reply = await fetch(url, { signal });
   const result = await reply.json();
-  if (!reply.ok) throw new Error(result.error || `HTTP ${reply.status}`);
+  if (!reply.ok) {
+    throw Object.assign(new Error(result.error), {
+      apiCode: result.code, apiParams: result.params, responseStatus: reply.status,
+    });
+  }
   return result;
 }
 
-function status(message) {
+function status(key, values) {
+  statusMessage = () => t(key, typeof values === "function" ? values() : values);
+  renderStatus();
+}
+
+function statusRequestError(error) {
+  statusMessage = () => requestError(error);
+  renderStatus();
+}
+
+function renderStatus() {
+  if (!statusMessage) return;
+  const message = statusMessage();
   $("#analysis-status").textContent = message;
   $("#ui-status").textContent = message;
+}
+
+function showSceneMessage(key) {
+  sceneMessage = key;
+  $("#scene-message").textContent = key ? t(key) : "";
+  $("#scene-message").hidden = !key || view === "chart";
 }
 
 function periodParams(start, hours) {
@@ -58,8 +92,20 @@ function renderSky() {
   const note = $("#globe-source");
   note.hidden = view !== "globe" || !renderer;
   note.textContent = directions
-    ? `${date(globeTime)} · JPL Horizons · масштаб условный`
-    : skyError ? "Направления JPL недоступны · обзорная подсветка" : "Загружаем направления JPL…";
+    ? `${date(globeTime)} · JPL Horizons · ${t("notToScale")}`
+    : t(skyError ? "skyUnavailable" : "skyLoading");
+}
+
+function renderSkyProvenance() {
+  const note = $("#sky-provenance");
+  note.replaceChildren();
+  if (skyError) note.textContent = t("skyPeriodUnavailable");
+  else if (sky) {
+    const link = document.createElement("a");
+    link.href = sky.source.url;
+    link.textContent = t("globeDirections");
+    note.append(link, ` · ${sourceName(sky.source.mode)} · MOON_ME.`);
+  }
 }
 
 async function loadSky({ start, end }) {
@@ -75,17 +121,20 @@ async function loadSky({ start, end }) {
     const data = await getJson(`/api/sky?${params}`, skyRequest.signal);
     if (skyKey !== key) return;
     sky = data;
-    const link = document.createElement("a");
-    link.href = sky.source.url;
-    link.textContent = "Направления для глобуса";
-    $("#sky-provenance").replaceChildren(link, ` · ${sourceNames[sky.source.mode]} · MOON_ME.`);
   } catch {
     if (skyKey !== key) return;
     skyError = true;
     skyKey = null;
-    $("#sky-provenance").textContent = "Для выбранного периода направления глобуса недоступны.";
   }
   renderSky();
+  renderSkyProvenance();
+}
+
+function renderSite(focus) {
+  if (!site) return;
+  const name = site.name ?? t(selection === "random" ? "randomSite" : "selectedSite");
+  $("#site-name").textContent = name;
+  renderer?.setSite({ ...site, name }, focus);
 }
 
 function selectSite(next, kind, focus = true) {
@@ -93,13 +142,12 @@ function selectSite(next, kind, focus = true) {
   selection = kind;
   field("lat").value = site.lat;
   field("lon").value = site.lon;
-  $("#site-name").textContent = site.name;
   $("#site-coordinates").textContent = `${Math.abs(site.lat).toFixed(5)}° ${site.lat < 0 ? "S" : "N"} · ${Math.abs(site.lon).toFixed(5)}° ${site.lon < 0 ? "W" : "E"}`;
   for (const button of document.querySelectorAll("[data-site]")) {
     button.setAttribute("aria-pressed", String(button.dataset.site === kind));
   }
   $("#scene-calculate").hidden = !["custom", "random"].includes(kind);
-  renderer?.setSite(site, focus);
+  renderSite(focus);
 }
 
 function resetAnalysis() {
@@ -109,7 +157,7 @@ function resetAnalysis() {
   requestId++;
   compareId++;
   analysis = comparison = currentAngles = null;
-  $("#compare").textContent = "Сравнить с другой площадкой";
+  $("#compare").textContent = t("compare");
   slider.disabled = $("#play").disabled = $("#reset").disabled = $("#compare").disabled = true;
   $("#sun-signal").classList.remove("lost");
   $("#earth-signal").classList.remove("lost");
@@ -129,9 +177,9 @@ function fillPeriod() {
 }
 
 function updateSignal(name, el, az) {
-  const visibility = el > 0 ? "выше 0°" : el < 0 ? "ниже 0°" : "на 0°";
+  const visibility = t(el > 0 ? "above" : el < 0 ? "below" : "onHorizon");
   $(`#${name}-signal`).classList.toggle("lost", el <= 0);
-  $(`#${name}-detail`).textContent = `${angle(el)} · ${visibility} · аз. ${az.toFixed(1)}°`;
+  $(`#${name}-detail`).textContent = `${angle(el)} · ${visibility}\n${t("azimuth")} ${az.toFixed(1)}°`;
 }
 
 function renderTime() {
@@ -143,17 +191,17 @@ function renderTime() {
   $("#time-label").textContent = date(time);
   slider.setAttribute("aria-valuetext", date(time));
   $("#remaining").textContent = `${result.clipped ? "≥ " : ""}${duration(result.remaining)}`;
-  $("#stage").textContent = result.sufficient ? "ХВАТАЕТ" : result.clipped ? "НЕ ПОДТВЕРЖДЕНО" : "НЕ ХВАТАЕТ";
+  $("#stage").textContent = t(result.sufficient ? "enough" : result.clipped ? "unconfirmed" : "insufficient");
   $("#stage").classList.toggle("warning", !result.sufficient);
-  $("#required-display").textContent = required.toLocaleString("ru");
+  $("#required-display").textContent = required.toLocaleString(language);
   updateSignal("sun", currentAngles.sunEl, currentAngles.sunAz);
   updateSignal("earth", currentAngles.earthEl, currentAngles.earthAz);
 
   nextTime = result.sufficient ? null : result.next;
   $("#next").hidden = nextTime === null;
-  const next = nextTime === null ? "Подходящего старта в оставшемся периоде нет." : `Ближайший старт ≈ ${date(nextTime)}.`;
-  const coverage = result.clipped ? " Видимость подтверждена до конца расчётного периода." : "";
-  $("#outcome").textContent = (result.sufficient ? "Окно покрывает нужное время." : next) + coverage;
+  const next = nextTime === null ? t("noStart") : t("nextStart", { time: date(nextTime) });
+  const coverage = result.clipped ? ` ${t("coverage")}` : "";
+  $("#outcome").textContent = (result.sufficient ? t("windowSufficient") : next) + coverage;
   for (const update of cursorUpdates) update(time);
   renderer?.setAngles(currentAngles);
   renderSky();
@@ -161,37 +209,44 @@ function renderTime() {
 
 function drawPlots() {
   cursorUpdates = [
-    drawChart($("#main-plot"), analysis, required, comparison, mobile.matches),
-    drawChart($("#detail-plot"), analysis, required, comparison, mobile.matches),
+    drawChart($("#main-plot"), analysis, required, comparison),
+    drawChart($("#detail-plot"), analysis, required, comparison),
   ];
   renderTime();
 }
 
+function renderAnalysisText() {
+  if (!analysis) return;
+  const data = analysis;
+  const { start, end, stepMinutes } = data.period;
+  $("#source").replaceChildren("JPL HORIZONS", document.createElement("br"));
+  const tag = document.createElement("span");
+  tag.textContent = sourceName(data.source.mode);
+  $("#source").append(tag);
+  $("#summary").textContent = t("summary", { total: duration(data.summary.totalMs), longest: duration(data.summary.longestMs) });
+  if (comparison) {
+    $("#summary").textContent += ` ${t("compareSummary", { name: comparison.name, total: duration(comparison.analysis.summary.totalMs) })}`;
+  }
+  const provenance = $("#provenance");
+  provenance.replaceChildren(`NASA/JPL Horizons · ${sourceName(data.source.mode)} · ${stepMinutes} ${t("minutes")} · ${date(start)} — ${date(end)}. `);
+  for (const target of ["sun", "earth"]) {
+    const record = data.source.records[target];
+    const link = document.createElement("a");
+    link.href = record.url;
+    link.textContent = `${t(target)} (API ${record.version})`;
+    provenance.append(link, ` · ${t("retrieved", { time: date(Date.parse(record.retrievedUtc)) })} `);
+  }
+}
+
 function renderAnalysis(data, keepTime = null) {
   analysis = data;
-  const { start, end, stepMinutes } = data.period;
+  const { start, end } = data.period;
   slider.max = (end - start) / minute;
   slider.value = keepTime !== null && keepTime >= start && keepTime <= end ? (keepTime - start) / minute : 0;
   slider.disabled = $("#play").disabled = $("#reset").disabled = false;
   $("#compare").disabled = false;
   $("#timeline-end").textContent = date(end).slice(5, 16);
-  $("#source").replaceChildren("JPL HORIZONS", document.createElement("br"));
-  const tag = document.createElement("span");
-  tag.textContent = sourceNames[data.source.mode];
-  $("#source").append(tag);
-  $("#summary").textContent = `Общее время видимости ${duration(data.summary.totalMs)}. Самое длинное окно в периоде ${duration(data.summary.longestMs)}.`;
-  if (comparison) {
-    $("#summary").textContent += ` ${comparison.name}: общее время ${duration(comparison.analysis.summary.totalMs)}.`;
-  }
-  const provenance = $("#provenance");
-  provenance.replaceChildren(`NASA/JPL Horizons · ${sourceNames[data.source.mode]} · ${stepMinutes} мин · ${date(start)} — ${date(end)}. `);
-  for (const [target, label] of [["sun", "Солнце"], ["earth", "Земля"]]) {
-    const record = data.source.records[target];
-    const link = document.createElement("a");
-    link.href = record.url;
-    link.textContent = `${label} (API ${record.version})`;
-    provenance.append(link, ` · получено ${date(Date.parse(record.retrievedUtc))}. `);
-  }
+  renderAnalysisText();
   drawPlots();
   loadSky(data.period);
 }
@@ -200,15 +255,15 @@ async function loadAnalysis(url, keepTime = null) {
   resetAnalysis();
   const id = requestId;
   request = new AbortController();
-  status("Загружаем эфемериды…");
+  status("ephemerisLoading");
   try {
     const data = await getJson(url, request.signal);
     if (id !== requestId) return;
     selectSite({ ...site, lat: data.site.lat, lon: data.site.lon }, selection, false);
     renderAnalysis(data, keepTime);
-    status(sourceNames[data.source.mode]);
+    status(sourceKeys[data.source.mode]);
   } catch (error) {
-    if (id === requestId) status(error.message);
+    if (id === requestId) statusRequestError(error);
   }
 }
 
@@ -218,16 +273,16 @@ function submit() {
   const keepTime = currentAngles?.t ?? null;
   const moved = lat !== site.lat || lon !== site.lon;
   const kind = selection === "random" && !moved ? "random" : "custom";
-  selectSite(preset || { name: kind === "random" ? "Случайная точка" : "Выбранная точка", lat, lon },
+  selectSite(preset || { lat, lon },
     preset?.id || kind, moved);
   loadAnalysis(queryUrl(lat, lon, `${field("start").value}Z`, field("hours").value), keepTime);
 }
 
 function pickSite(coords) {
   resetAnalysis();
-  selectSite({ ...coords, name: "Выбранная точка" }, "custom", false);
+  selectSite(coords, "custom", false);
   $("#viewport").classList.remove("picking");
-  status("Точка выбрана. Нажмите «Рассчитать для точки».");
+  status("picked");
   if (mobile.matches) {
     $("#conditions-toggle").setAttribute("aria-expanded", "true");
     $("#conditions-panel").classList.add("open");
@@ -237,13 +292,13 @@ function pickSite(coords) {
 async function showView(next) {
   view = next;
   $("#view-number").textContent = viewInfo[view][0];
-  $("#view-label").textContent = viewInfo[view][1];
+  $("#view-label").textContent = t(viewInfo[view][1]);
   $("#main-plot").hidden = view !== "chart";
   $("#viewport").hidden = view === "chart";
   $("#map-tools").hidden = view !== "globe";
   $("#sky-tools").hidden = view !== "ground";
   renderSky();
-  $("#scene-message").hidden = true;
+  showSceneMessage(null);
   for (const button of document.querySelectorAll("[data-view]")) {
     button.setAttribute("aria-pressed", String(button.dataset.view === view));
   }
@@ -256,19 +311,15 @@ async function showView(next) {
       const { createScene } = await import("./scene.mjs");
       renderer ??= createScene($("#viewport"), {
         pick: pickSite,
-        message: text => {
-          $("#scene-message").textContent = text;
-          $("#scene-message").hidden = !text || view === "chart";
-        },
+        message: showSceneMessage,
       });
-      renderer.setSite(site, true);
+      renderSite(true);
       renderer.setAngles(currentAngles);
     }
     renderer.show(view);
     renderSky();
   } catch {
-    $("#scene-message").textContent = "3D недоступно. График и ручной выбор координат работают.";
-    $("#scene-message").hidden = false;
+    showSceneMessage("no3d");
     $("#map-tools").hidden = $("#sky-tools").hidden = true;
     $("#globe-source").hidden = true;
   }
@@ -277,7 +328,7 @@ async function showView(next) {
 function stopPlayback() {
   if (frame) cancelAnimationFrame(frame);
   frame = 0;
-  $("#play span").textContent = "Прокрутить время";
+  $("#play span").textContent = t("play");
 }
 
 function play() {
@@ -285,7 +336,7 @@ function play() {
   if (slider.value === slider.max) slider.value = 0;
   const from = Number(slider.value), to = Number(slider.max);
   const started = performance.now();
-  $("#play span").textContent = "Пауза";
+  $("#play span").textContent = t("pause");
   function tick(now) {
     const fraction = Math.min(1, (now - started) / 20000);
     const minuteIndex = Math.round(from + (to - from) * fraction);
@@ -303,7 +354,7 @@ function play() {
 async function compare() {
   if (!analysis || comparison) {
     comparison = null;
-    $("#compare").textContent = "Сравнить с другой площадкой";
+    $("#compare").textContent = t("compare");
     if (analysis) renderAnalysis(analysis, currentAngles.t);
     return;
   }
@@ -312,17 +363,17 @@ async function compare() {
   const id = ++compareId;
   compareRequest = new AbortController();
   $("#compare").disabled = true;
-  status(`Загружаем ${other.name} на ту же шкалу UTC…`);
+  status("comparing", { name: other.name });
   try {
     const data = await getJson(queryUrl(other.lat, other.lon, new Date(start).toISOString().replace(".000", ""),
       (end - start) / hour), compareRequest.signal);
     if (id !== compareId) return;
     comparison = { name: other.name, analysis: data };
-    $("#compare").textContent = "Скрыть сравнение";
+    $("#compare").textContent = t("hideComparison");
     renderAnalysis(analysis, currentAngles.t);
-    status(`Сравнение с ${other.name} · ${sourceNames[data.source.mode]}`);
+    status("compared", () => ({ name: other.name, source: sourceName(data.source.mode) }));
   } catch (error) {
-    if (id === compareId) status(error.message);
+    if (id === compareId) statusRequestError(error);
   } finally {
     if (id === compareId) $("#compare").disabled = false;
   }
@@ -343,13 +394,13 @@ async function init() {
       const latitude = Math.asin(2 * Math.random() - 1) * 180 / Math.PI;
       const lat = Math.max(-89.999999, Math.min(89.999999, Number(latitude.toFixed(6))));
       const lon = Number((360 * Math.random() - 180).toFixed(6));
-      selectSite({ name: "Случайная точка", lat, lon }, kind);
+      selectSite({ lat, lon }, kind);
       showView("globe");
-      status("Случайная точка выбрана. Нажмите «Рассчитать для точки».");
+      status("randomPicked");
     } else {
       showView("globe");
       $("#viewport").classList.add("picking");
-      status("Нажмите на глобус или введите координаты в параметрах анализа.");
+      status("pickHint");
       $("#conditions-toggle").setAttribute("aria-expanded", "false");
       $("#conditions-panel").classList.remove("open");
     }
@@ -370,7 +421,7 @@ async function init() {
   $("#required").addEventListener("input", event => {
     if (!event.target.validity.valid) return;
     required = event.target.valueAsNumber;
-    $("#required-display").textContent = required.toLocaleString("ru");
+    $("#required-display").textContent = required.toLocaleString(language);
     drawPlots();
   });
   slider.addEventListener("input", () => { stopPlayback(); renderTime(); });
@@ -402,9 +453,32 @@ async function init() {
       $("#rotate").setAttribute("aria-pressed", "false");
     });
   }
-  mobile.addEventListener("change", drawPlots);
+  window.addEventListener("resize", drawPlots);
   showView("globe");
   await loadAnalysis("/api/demo/odysseus");
 }
 
-init().catch(error => status(`Приложение не загрузилось. ${error.message}`));
+function refreshLanguage() {
+  localizePage();
+  $("#view-label").textContent = t(viewInfo[view][1]);
+  $("#play span").textContent = t(frame ? "pause" : "play");
+  $("#compare").textContent = t(comparison ? "hideComparison" : "compare");
+  $("#required-display").textContent = required.toLocaleString(language);
+  renderSite(false);
+  renderAnalysisText();
+  renderStatus();
+  renderSkyProvenance();
+  showSceneMessage(sceneMessage);
+  renderer?.localize();
+  drawPlots();
+  renderSky();
+}
+
+for (const button of document.querySelectorAll("[data-language]")) {
+  button.addEventListener("click", () => {
+    setLanguage(button.dataset.language);
+    refreshLanguage();
+  });
+}
+refreshLanguage();
+init().catch(error => status("loadFailed", () => ({ error: requestError(error) })));

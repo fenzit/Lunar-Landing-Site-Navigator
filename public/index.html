@@ -1,10 +1,10 @@
 <!doctype html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#08090a">
-  <title>LunarPilot — навигатор посадки</title>
+  <title>LunarPilot — Lunar Landing Navigator</title>
   <link rel="stylesheet" href="/layout.css">
   <link rel="stylesheet" href="/app.css">
   <script type="importmap">
@@ -15,116 +15,125 @@
   <main id="interface">
     <div class="experience">
       <div class="scene" id="scene">
-        <div class="viewport" id="viewport" aria-label="Трёхмерная Луна"></div>
+        <div class="viewport" id="viewport" aria-label="3D Moon" data-i18n-label="moon3d"></div>
         <div class="map-tools" id="map-tools" hidden>
-          <div class="body-controls" role="group" aria-label="Масштаб сцены">
-            <button data-focus-body="system" type="button" aria-pressed="true">Вся система</button>
-            <button data-focus-body="moon" type="button" aria-pressed="false">К Луне</button>
+          <div class="body-controls" role="group" aria-label="Scene scale" data-i18n-label="sceneScale">
+            <button data-focus-body="system" type="button" aria-pressed="true" data-i18n="wholeSystem">Whole system</button>
+            <button data-focus-body="moon" type="button" aria-pressed="false" data-i18n="toMoon">To Moon</button>
           </div>
-          <div class="body-controls" id="body-controls" role="group" aria-label="Наведение камеры" hidden>
-            <button id="globe-sun" type="button" title="Повернуть камеру к Солнцу">Солнце</button>
-            <button id="globe-earth" type="button" title="Повернуть камеру к Земле">Земля</button>
+          <div class="body-controls" id="body-controls" role="group" aria-label="Aim camera" data-i18n-label="aim" hidden>
+            <button id="globe-sun" type="button" title="Aim camera at the Sun" data-i18n-title="aimSun" data-i18n="sun">Sun</button>
+            <button id="globe-earth" type="button" title="Aim camera at Earth" data-i18n-title="aimEarth" data-i18n="earth">Earth</button>
           </div>
-          <button id="rotate" type="button" aria-pressed="false">Облёт камеры</button>
-          <button id="animate-bodies" type="button" aria-pressed="true">Анимация тел</button>
-          <span class="animation-note">Обзорное вращение · скорости условные</span>
-          <button id="slope" type="button" aria-pressed="false">Уклоны</button>
-          <div id="slope-key" hidden><span class="slope-gradient"></span><span>0° &nbsp; 10° &nbsp; ≥20°</span><small>Макс. уклон · обзор SLDEM2015</small><small>Без цвета — нет данных</small></div>
+          <button id="rotate" type="button" aria-pressed="false" data-i18n="rotate">Rotate</button>
+          <button id="animate-bodies" type="button" aria-pressed="true" data-i18n="animateBodies">Animate bodies</button>
+          <span class="animation-note" data-i18n="animationNote">Illustrative rotation · speeds not to scale</span>
+          <button id="slope" type="button" aria-pressed="false" data-i18n="slope">Slopes</button>
+          <div id="slope-key" hidden><span class="slope-gradient"></span><span>0° &nbsp; 10° &nbsp; ≥20°</span><small data-i18n="slopeSource">Max slope · SLDEM2015 overview</small><small data-i18n="slopeNoData">Uncolored areas lack data</small></div>
         </div>
         <p class="globe-source" id="globe-source" hidden></p>
         <div class="sky-tools" id="sky-tools" hidden>
-          <button id="face-sun" type="button">К Солнцу</button>
-          <button id="face-earth" type="button">К Земле</button>
+          <button id="face-sun" type="button" data-i18n="faceSun">Face Sun</button>
+          <button id="face-earth" type="button" data-i18n="faceEarth">Face Earth</button>
         </div>
         <div class="scene-message" id="scene-message" role="status" hidden></div>
         <div id="main-plot" class="main-plot" hidden></div>
       </div>
       <div class="vignette" aria-hidden="true"></div>
       <header class="topbar">
-        <a class="brand" href="#interface" aria-label="LunarPilot, интерфейс"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M26 19A12 12 0 0 1 13 6a12 12 0 1 0 13 13Z"/><path d="m18 15 3-8 3 8 8 3-8 3-3 8-3-8-8-3Z"/></svg><span>lunar<b>pilot</b><small>LUNAR LANDING NAVIGATOR</small></span></a>
+        <a class="brand" href="#interface" aria-label="LunarPilot, main screen" data-i18n-label="brand"><svg viewBox="0 0 32 32" aria-hidden="true"><path d="M26 19A12 12 0 0 1 13 6a12 12 0 1 0 13 13Z"/><path d="m18 15 3-8 3 8 8 3-8 3-3 8-3-8-8-3Z"/></svg><span>lunar<b>pilot</b><small>LUNAR LANDING NAVIGATOR</small></span></a>
         <span class="concept"><i></i> NASA SPACE APPS <span>2026</span></span>
-        <a class="sim-link" href="#analysis">Параметры анализа ↓</a>
+        <div class="topbar-actions">
+          <a class="sim-link" href="#analysis"><span data-i18n="analysis">Analysis settings</span> ↓</a>
+          <div class="language-picker" role="group" aria-label="Interface language" data-i18n-label="language">
+            <button type="button" data-language="en" lang="en" aria-label="English" aria-pressed="true">EN</button>
+            <button type="button" data-language="ru" lang="ru" aria-label="Русский" aria-pressed="false">RU</button>
+          </div>
+        </div>
       </header>
-      <section class="intro" aria-label="Место посадки">
+      <section class="intro" aria-label="Landing site" data-i18n-label="landingSite">
         <div class="eyebrow"><span class="line"></span> LUNAR LANDING / NAVIGATOR</div>
-        <h1>На краю<br><em>тишины.</em></h1>
-        <p>Сколько света и прямой видимости Земли останется после посадки?</p>
+        <h1><span data-i18n="heroFirst">At the edge</span><br><em data-i18n="heroLast">of silence.</em></h1>
+        <p data-i18n="intro">How long will sunlight and a direct view of Earth last after landing?</p>
         <div class="location"><b id="site-name">Odysseus</b><span id="site-coordinates">80.12760° S · 1.43670° E</span></div>
       </section>
 
       <button class="conditions-toggle" id="conditions-toggle" type="button" aria-expanded="false" aria-controls="conditions-panel">
-        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M9 4v6m6 4v6"/></svg> Условия
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 17h16M9 4v6m6 4v6"/></svg> <span data-i18n="conditions">Conditions</span>
       </button>
-      <aside class="conditions" id="conditions-panel" aria-label="Условия посадки">
-        <div class="section-label">ОКРУЖЕНИЕ <span>ГОРИЗОНТ 0°</span></div>
-        <div class="field"><span>Площадка</span>
-          <div class="segmented sites" role="group" aria-label="Площадка">
+      <aside class="conditions" id="conditions-panel" aria-label="Landing conditions" data-i18n-label="landingConditions">
+        <div class="section-label"><b data-i18n="environment">ENVIRONMENT</b><span data-i18n="horizon">0° HORIZON</span></div>
+        <div class="field"><span data-i18n="site">Site</span>
+          <div class="segmented sites" role="group" aria-label="Site" data-i18n-label="site">
             <button data-site="odysseus" type="button">Odysseus</button><button data-site="athena" type="button">Athena</button>
-            <button data-site="custom" type="button">На Луне</button><button data-site="random" type="button">Случайная</button>
+            <button data-site="custom" type="button" data-i18n="pickSite">Pick on Moon</button><button data-site="random" type="button" data-i18n="random">Random site</button>
           </div>
         </div>
         <div class="signal" id="sun-signal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v3m0 14v3M2 12h3m14 0h3M5 5l2 2m10 10 2 2M5 19l2-2M17 7l2-2"/></svg>
-          <div><b>Солнце</b><small id="sun-detail">—</small></div><i></i>
+          <div><b data-i18n="sun">Sun</b><small id="sun-detail">—</small></div><i></i>
         </div>
         <div class="signal" id="earth-signal">
           <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20v-4m5 4v-8m5 8V8m5 12V4"/></svg>
-          <div><b>Земля</b><small id="earth-detail">—</small></div><i></i>
+          <div><b data-i18n="earth">Earth</b><small id="earth-detail">—</small></div><i></i>
         </div>
-        <p class="condition-note">Геометрическая видимость · рельеф не учтён</p>
-        <button id="scene-calculate" class="calculate-inline" type="button" hidden>Рассчитать для точки</button>
+        <p class="condition-note" data-i18n="visibilityNote">Geometric visibility · terrain excluded</p>
+        <button id="scene-calculate" class="calculate-inline" type="button" data-i18n="calculateSite" hidden>Analyze this site</button>
       </aside>
 
-      <div class="view-caption"><span id="view-number">CAM 03</span><span id="view-label">ГРАФИК ВЫСОТ</span></div>
-      <section class="telemetry" aria-label="Расчёт окна" aria-live="off">
-        <div><small>ОСТАЛОСЬ В ОКНЕ</small><span><b id="remaining">—</b></span></div>
-        <div><small>НУЖНО</small><span><b id="required-display">4</b> <em>ч</em></span></div>
-        <div><small>ПЕРВЫЕ ОПЕРАЦИИ</small><span class="stage-value" id="stage">—</span></div>
-        <div class="visual-note" id="source">JPL HORIZONS</div>
-      </section>
-
-      <footer class="bottom-panel">
-        <div class="camera-picker"><span class="section-label">ТОЧКА ЗРЕНИЯ</span><div role="group" aria-label="Точка зрения">
-          <button data-view="globe" type="button" aria-pressed="false"><span>01</span> Глобус</button>
-          <button data-view="ground" type="button" aria-pressed="false"><span>02</span> У поверхности</button>
-          <button data-view="chart" type="button" aria-pressed="true"><span>03</span> График</button>
-        </div></div>
-        <div class="playback">
-          <button id="play" type="button" class="play-button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Прокрутить время</span></button>
-          <button id="reset" type="button" class="reset-button" disabled aria-label="В начало периода" title="В начало периода">↺</button>
+      <div class="readout">
+        <div class="readout-header">
+          <div class="view-caption"><span id="view-number">CAM 03</span><span id="view-label">ELEVATION CHART · UTC</span></div>
+          <div class="scene-hint" id="ui-status" role="status"></div>
         </div>
-        <div class="timeline">
-          <output id="time-label" for="time">— UTC</output>
-          <input id="time" type="range" aria-label="Время посадки, UTC" min="0" max="10080" step="1" value="0" disabled>
-          <span id="timeline-end">UTC</span>
-        </div>
-        <div class="timeline-status" id="outcome"></div>
-      </footer>
-      <div class="scene-hint" id="ui-status" role="status"></div>
+        <section class="telemetry" aria-label="Visibility window result" data-i18n-label="windowResult" aria-live="off">
+          <div><small data-i18n="remaining">WINDOW REMAINING</small><span><b id="remaining">—</b></span></div>
+          <div><small data-i18n="required">REQUIRED</small><span><b id="required-display">4</b> <em data-i18n="hours">h</em></span></div>
+          <div><small data-i18n="operations">INITIAL OPERATIONS</small><span class="stage-value" id="stage">—</span></div>
+          <div class="visual-note" id="source">JPL HORIZONS</div>
+        </section>
+        <footer class="bottom-panel">
+          <div class="camera-picker"><span class="section-label" data-i18n="view">VIEW</span><div role="group" aria-label="View" data-i18n-label="viewSelect">
+            <button data-view="globe" type="button" aria-pressed="false"><span>01</span> <span data-i18n="globe">Globe</span></button>
+            <button data-view="ground" type="button" aria-pressed="false"><span>02</span> <span data-i18n="ground">Surface view</span></button>
+            <button data-view="chart" type="button" aria-pressed="true"><span>03</span> <span data-i18n="chart">Chart</span></button>
+          </div></div>
+          <div class="playback">
+            <button id="play" type="button" class="play-button" disabled><svg viewBox="0 0 24 24" aria-hidden="true"><path d="m9 5 11 7-11 7Z"/></svg><span>Play timeline</span></button>
+            <button id="reset" type="button" class="reset-button" disabled aria-label="Back to period start" title="Back to period start" data-i18n-label="reset" data-i18n-title="reset">↺</button>
+          </div>
+          <div class="timeline">
+            <output id="time-label" for="time">— UTC</output>
+            <input id="time" type="range" aria-label="Landing time, UTC" data-i18n-label="time" min="0" max="10080" step="1" value="0" disabled>
+            <span id="timeline-end">UTC</span>
+          </div>
+          <div class="timeline-status" id="outcome"></div>
+        </footer>
+      </div>
     </div>
 
     <section class="analysis-panel" id="analysis" aria-labelledby="analysis-title">
-      <h2 id="analysis-title">Параметры анализа</h2>
+      <h2 id="analysis-title" data-i18n="analysis">Analysis settings</h2>
       <form id="analysis-form">
-        <label>Широта, ° <input name="lat" type="number" step="any" min="-89.999999" max="89.999999" required></label>
-        <label>Восточная долгота, ° <input name="lon" type="number" step="any" min="-180" max="180" required></label>
-        <label>Начало, UTC <input name="start" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
-        <label>Период, ч <input name="hours" type="number" min="1" max="336" step="1" required></label>
-        <label>Нужно для операций, ч <input name="required" id="required" type="number" min="0.25" max="336" step="0.25" value="4" required></label>
-        <button type="submit" class="play-button">Рассчитать</button>
+        <label><span data-i18n="latitude">Latitude, °</span><input name="lat" type="number" step="any" min="-89.999999" max="89.999999" required></label>
+        <label><span data-i18n="longitude">East longitude, °</span><input name="lon" type="number" step="any" min="-180" max="180" required></label>
+        <label><span data-i18n="startUtc">Start, UTC</span><input name="start" type="datetime-local" min="1972-01-01T00:00" max="2099-12-31T23:59" required></label>
+        <label><span data-i18n="period">Period, h (up to 30 days)</span><input name="hours" type="number" min="1" step="1" required></label>
+        <label><span data-i18n="requiredInput">Hours needed for operations</span><input name="required" id="required" type="number" min="0.25" step="0.25" value="4" required></label>
+        <button type="submit" class="play-button" data-i18n="calculate">Calculate</button>
       </form>
       <div class="analysis-actions">
-        <button id="demo" type="button">Открыть сохранённый сценарий</button>
-        <button id="compare" type="button" disabled>Сравнить с другой площадкой</button>
-        <button id="next" type="button" hidden>К ближайшему старту</button>
+        <button id="demo" type="button" data-i18n="demo">Open saved scenario</button>
+        <button id="compare" type="button" disabled>Compare with another site</button>
+        <button id="next" type="button" data-i18n="next" hidden>Go to next viable start</button>
       </div>
       <p id="analysis-status" role="status"></p>
       <div id="detail-plot"></div>
       <p id="summary"></p>
-      <details><summary>Источники и границы модели</summary>
+      <details><summary data-i18n="sources">Sources and model limits</summary>
         <p id="provenance"></p>
         <p id="sky-provenance"></p>
-        <p>Порог 0° применяется к центрам Солнца и Земли. Модель учитывает геометрическую видимость. В неё не входят местные тени, затмения, выработка энергии и параметры радиолинии. Подробности рельефа ниже масштаба карты на глобусе не отображаются.</p>
+        <p data-i18n="model">The 0° threshold applies to the centers of the Sun and Earth. The model estimates geometric visibility. Local shadows, eclipses, power generation, and radio link performance are outside its scope. The globe shows terrain at the resolution of its source map.</p>
         <p><a href="https://ssd-api.jpl.nasa.gov/doc/horizons.html">JPL Horizons</a> · <a href="https://svs.gsfc.nasa.gov/4720/">NASA CGI Moon Kit / LRO / LOLA</a> · <a href="https://pgda.gsfc.nasa.gov/products/67">SLDEM2015</a></p>
       </details>
     </section>

@@ -3,6 +3,7 @@ import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { AnalysisError, demoAnalysis, getAnalysis, getSky, normalizePeriod, normalizeQuery } from "./lib/horizons.mjs";
 import { demoHours, demoStart, demoStep, sites } from "./lib/sites.mjs";
+import { apiErrorMessage } from "./lib/api-errors.mjs";
 
 const offline = process.argv.includes("--offline");
 const staticRoots = [
@@ -10,7 +11,7 @@ const staticRoots = [
   ["/lib/", resolve("lib")],
   ["/", resolve("public")],
 ];
-const browserLibraries = new Set(["/lib/windows.mjs", "/lib/geography.mjs", "/lib/sites.mjs"]);
+const browserLibraries = new Set(["/lib/windows.mjs", "/lib/geography.mjs", "/lib/sites.mjs", "/lib/api-errors.mjs"]);
 const types = {
   ".html": "text/html; charset=utf-8", ".css": "text/css; charset=utf-8",
   ".mjs": "text/javascript; charset=utf-8", ".js": "text/javascript; charset=utf-8",
@@ -22,9 +23,13 @@ function json(res, data, status = 200) {
   res.end(JSON.stringify(data));
 }
 
+function errorResponse(res, code, status, params = {}) {
+  return json(res, { error: apiErrorMessage(code, params), code, params }, status);
+}
+
 const server = createServer(async (req, res) => {
   try {
-    if (req.method !== "GET") return json(res, { error: "Используйте GET." }, 405);
+    if (req.method !== "GET") return errorResponse(res, "method", 405);
     const url = new URL(req.url, "http://localhost");
     const path = decodeURIComponent(url.pathname);
     if (path === "/api/sites") {
@@ -40,23 +45,23 @@ const server = createServer(async (req, res) => {
       const site = sites.find(site => path === `/api/demo/${site.id}`);
       if (site) return json(res, await demoAnalysis(site));
     }
-    if (path.startsWith("/api/")) return json(res, { error: "Такого маршрута нет." }, 404);
-    if (path.startsWith("/lib/") && !browserLibraries.has(path)) return json(res, { error: "Файл не найден." }, 404);
-    if (path.includes("\\")) return json(res, { error: "Неверный URL." }, 400);
+    if (path.startsWith("/api/")) return errorResponse(res, "route", 404);
+    if (path.startsWith("/lib/") && !browserLibraries.has(path)) return errorResponse(res, "file", 404);
+    if (path.includes("\\")) return errorResponse(res, "url", 400);
 
     const [prefix, root] = staticRoots.find(([prefix]) => path.startsWith(prefix));
     const file = resolve(root, path === "/" ? "index.html" : path.slice(prefix.length));
     const type = types[extname(file)];
-    if (!file.startsWith(root + sep) || !type) return json(res, { error: "Файл не найден." }, 404);
+    if (!file.startsWith(root + sep) || !type) return errorResponse(res, "file", 404);
     const body = await readFile(file);
     res.writeHead(200, { "Content-Type": type, "X-Content-Type-Options": "nosniff" });
     res.end(body);
   } catch (error) {
-    if (error instanceof AnalysisError) return json(res, { error: error.message }, error.status);
-    if (["ENOENT", "EISDIR"].includes(error.code)) return json(res, { error: "Файл не найден." }, 404);
-    if (error instanceof URIError) return json(res, { error: "Неверный URL." }, 400);
+    if (error instanceof AnalysisError) return errorResponse(res, error.errorCode, error.status, error.params);
+    if (["ENOENT", "EISDIR"].includes(error.code)) return errorResponse(res, "file", 404);
+    if (error instanceof URIError) return errorResponse(res, "url", 400);
     console.error(error);
-    json(res, { error: "Ошибка локального сервера." }, 500);
+    errorResponse(res, "server", 500);
   }
 });
 
