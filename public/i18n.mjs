@@ -1,4 +1,11 @@
 const messages = {
+  historyTitle: ['Recent calculations', 'Последние расчёты'],
+  historyNote: ['The last {count} distinct calculations are saved in this browser. Open one to restore its site, settings, chart and windows.', 'Последние {count} разных расчётов сохраняются в этом браузере. Откройте любой, чтобы вернуть точку, параметры, график и окна.'],
+  historySession: ['The last {count} calculations are available in this tab. Browser storage is unavailable; they will be lost on reload.', 'Последние {count} расчётов доступны в этой вкладке. Хранилище браузера недоступно; после обновления страницы они пропадут.'],
+  historyResult: ['Windows: {count} · operations: {required} h · equipment: {height} m', 'Окон: {count} · операции: {required} ч · аппаратура: {height} м'],
+  historyOpen: ['Open result', 'Открыть результат'],
+  historyActive: ['Viewing this result', 'Открытый результат'],
+  historyRestored: ['Saved result restored. Dates and settings match that calculation.', 'Сохранённый результат открыт. Даты и параметры восстановлены из этого расчёта.'],
   windowsTitle: ['Shared visibility windows', 'Совместные окна видимости'],
   windowsNote: ['All Sun + Earth windows, including short ones. Margin is relative to {required} of operations. ≥ means visibility is confirmed only to the period end.', 'Все окна Солнца и Земли, включая короткие. Запас указан относительно {required} операций. ≥ означает, что видимость подтверждена только до конца периода.'],
   windowsStart: ['Start · UTC', 'Начало · UTC'],

@@ -3,6 +3,7 @@ import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
 import { renderWindowTable } from './window-table.mjs';
+import { AnalysisHistory, historyLimit } from './analysis-history.mjs';
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { horizonAt } from '/lib/terrain-math.mjs';
 
@@ -35,6 +36,10 @@ let request, compareRequest;
 let required = 4, cursorUpdates = [], currentAngles;
 let sky, skyKey, skyRequest, skyError = false, globeTime;
 let statusMessage, sceneMessage;
+let historyStorage;
+try { historyStorage = localStorage; } catch { /* Session history still works. */ }
+const analysisHistory = new AnalysisHistory(historyStorage);
+let activeHistoryId = null;
 
 function requestError(error) {
   if (!error.responseStatus) return t("requestFailed");
@@ -161,6 +166,8 @@ function resetAnalysis() {
   requestId++;
   compareId++;
   analysis = comparison = currentAngles = null;
+  activeHistoryId = null;
+  renderHistory();
   renderWindows();
   $("#compare").textContent = t("compare");
   slider.disabled = $("#play").disabled = $("#reset").disabled = $("#compare").disabled = true;
@@ -229,6 +236,57 @@ function renderWindows() {
   });
 }
 
+function renderHistory() {
+  const container = $('#analysis-history');
+  container.hidden = analysisHistory.records.length === 0;
+  const list = $('#history-list');
+  list.replaceChildren();
+  $('#history-note').textContent = t(analysisHistory.persistent ? 'historyNote' : 'historySession', { count: historyLimit });
+  for (const record of analysisHistory.records) {
+    const item = document.createElement('li');
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.className = 'history-result';
+    button.disabled = !config;
+    button.setAttribute('aria-pressed', String(record.id === activeHistoryId));
+    const name = document.createElement('b');
+    name.textContent = record.site?.name ?? t('selectedSite');
+    const coords = document.createElement('span');
+    coords.textContent = `${record.analysis.site.lat.toFixed(5)}°, ${record.analysis.site.lon.toFixed(5)}°`;
+    const period = document.createElement('span');
+    period.textContent = `${date(record.analysis.period.start)} — ${date(record.analysis.period.end)}`;
+    const result = document.createElement('small');
+    result.textContent = t('historyResult', {
+      count: record.analysis.windows.both.length,
+      required: record.required.toLocaleString(language),
+      height: record.analysis.terrain?.receiverHeight ?? 2,
+    });
+    const action = document.createElement('em');
+    action.textContent = t(record.id === activeHistoryId ? 'historyActive' : 'historyOpen');
+    button.append(name, coords, period, result, action);
+    button.addEventListener('click', () => restoreHistory(record.id));
+    item.append(button);
+    list.append(item);
+  }
+}
+
+function restoreHistory(id) {
+  const record = analysisHistory.get(id);
+  if (!record) return;
+  resetAnalysis(); // Also cancels a newer request before restoring its predecessor.
+  const data = record.analysis;
+  required = record.required;
+  field('required').value = required;
+  field('start').value = new Date(data.period.start).toISOString().slice(0, 16);
+  field('hours').value = (data.period.end - data.period.start) / hour;
+  field('receiver').value = data.terrain?.receiverHeight ?? 2;
+  selectSite({ ...record.site, lat: data.site.lat, lon: data.site.lon }, record.selection ?? 'custom', false);
+  activeHistoryId = id;
+  renderHistory();
+  renderAnalysis(data);
+  status('historyRestored');
+}
+
 function renderAnalysisText() {
   renderWindows();
   if (!analysis) return;
@@ -285,6 +343,8 @@ async function loadAnalysis(url, keepTime = null) {
     const edits=Object.fromEntries(['lat','lon'].filter(key=>field(key).value!==submitted[key]).map(key=>[key,field(key).value]));
     selectSite({ ...site, lat: data.site.lat, lon: data.site.lon }, selection, false);
     for(const [key,value] of Object.entries(edits)) field(key).value=value;
+    activeHistoryId = analysisHistory.save(data, { site, selection, required });
+    renderHistory();
     renderAnalysis(data, keepTime);
     status(sourceKeys[data.source.mode]);
   } catch (error) {
@@ -496,11 +556,13 @@ async function init() {
   window.addEventListener("resize", drawPlots);
   for(const input of form.elements) input.disabled=false;
   showView("globe");
-  await loadAnalysis("/api/demo/odysseus");
+  if (analysisHistory.records.length) restoreHistory(analysisHistory.records[0].id);
+  else await loadAnalysis("/api/demo/odysseus");
 }
 
 function refreshLanguage() {
   localizePage();
+  renderHistory();
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#play span").textContent = t(frame ? "pause" : "play");
   $("#compare").textContent = t(comparison ? "hideComparison" : "compare");
