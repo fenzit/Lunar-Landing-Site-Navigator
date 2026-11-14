@@ -2,7 +2,7 @@ import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs
 import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
-import { renderWindowTable } from './window-table.mjs';
+import { renderHistoryTable } from './window-table.mjs';
 import { AnalysisHistory, historyLimit } from './analysis-history.mjs';
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { horizonAt } from '/lib/terrain-math.mjs';
@@ -228,46 +228,24 @@ function drawPlots() {
 }
 
 function renderWindows() {
-  renderWindowTable($('#visibility-windows'), analysis, required, offset => {
-    stopPlayback();
-    slider.value = offset;
-    renderTime();
-    slider.focus();
-  });
+  renderHistory();
 }
 
 function renderHistory() {
   const container = $('#analysis-history');
   container.hidden = analysisHistory.records.length === 0;
   const list = $('#history-list');
-  list.replaceChildren();
   $('#history-note').textContent = t(analysisHistory.persistent ? 'historyNote' : 'historySession', { count: historyLimit });
-  for (const record of analysisHistory.records) {
-    const item = document.createElement('li');
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'history-result';
-    button.disabled = !config;
-    button.setAttribute('aria-pressed', String(record.id === activeHistoryId));
-    const name = document.createElement('b');
-    name.textContent = record.site?.name ?? t('selectedSite');
-    const coords = document.createElement('span');
-    coords.textContent = `${record.analysis.site.lat.toFixed(5)}°, ${record.analysis.site.lon.toFixed(5)}°`;
-    const period = document.createElement('span');
-    period.textContent = `${date(record.analysis.period.start)} — ${date(record.analysis.period.end)}`;
-    const result = document.createElement('small');
-    result.textContent = t('historyResult', {
-      count: record.analysis.windows.both.length,
-      required: record.required.toLocaleString(language),
-      height: record.analysis.terrain?.receiverHeight ?? 2,
-    });
-    const action = document.createElement('em');
-    action.textContent = t(record.id === activeHistoryId ? 'historyActive' : 'historyOpen');
-    button.append(name, coords, period, result, action);
-    button.addEventListener('click', () => restoreHistory(record.id));
-    item.append(button);
-    list.append(item);
-  }
+  renderHistoryTable(list,analysisHistory.records,{
+    activeId:activeHistoryId,required,ready:Boolean(config),open:restoreHistory,
+    select:(id,offset)=>{
+      if(id!==activeHistoryId) restoreHistory(id);
+      stopPlayback();
+      slider.value=offset;
+      renderTime();
+      slider.focus();
+    },
+  });
 }
 
 function restoreHistory(id) {

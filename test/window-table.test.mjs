@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { visibilityRows } from '../public/window-table.mjs';
+import { savedCalculations, visibilityRows } from '../public/window-table.mjs';
 import { hour, minute } from '../lib/windows.mjs';
 
 const start = Date.parse('2026-11-14T00:00:00Z');
@@ -62,4 +62,27 @@ test('empty analyses and changing requirements do not invent or filter windows',
   assert.equal(updated.reserve, -hour);
   assert.equal(first.offset, updated.offset);
   assert.equal(updated.clippedEnd, true);
+});
+
+test('one table has at most three calculation rows while retaining all their windows', () => {
+  const records=Array.from({length:5},(_,index)=>({id:String(index),required:4,analysis:{period,windows:{both:[window(10,80),window(120,600)]}}}));
+  const rows=savedCalculations(records,null,4);
+  assert.equal(rows.length,3);
+  assert.deepEqual(rows.map(row=>row.id),['0','1','2']);
+  assert.ok(rows.every(row=>row.rows.length===2));
+  assert.equal(records.length,5);
+});
+
+test('changing operation time updates the active calculation margin without changing saved neighbours', () => {
+  const records=['first','second'].map(id=>({id,required:4,analysis:{period,windows:{both:[window(0,300)]}}}));
+  const [first,second]=savedCalculations(records,'first',2);
+  assert.equal(first.rows[0].reserve,3*hour);
+  assert.equal(second.rows[0].reserve,hour);
+  assert.equal(records[0].required,4);
+});
+
+test('an empty calculation still occupies one history row', () => {
+  const rows=savedCalculations([{id:'empty',required:4,analysis:{period,windows:{both:[]}}}],null,4);
+  assert.equal(rows.length,1);
+  assert.deepEqual(rows[0].rows,[]);
 });

@@ -1,5 +1,5 @@
 const storageKey = 'lunarpilot-analysis-history-v1';
-export const historyLimit = 5;
+export const historyLimit = 3;
 const clone = value => JSON.parse(JSON.stringify(value));
 
 function usable(record) {

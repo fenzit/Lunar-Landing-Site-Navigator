@@ -24,7 +24,7 @@ test('a later calculation preserves earlier windows, settings and timeline after
     visibilityRows(first.windows.both, first.period, 4));
 });
 
-test('history keeps the five most recent distinct calculations and refreshes duplicates', async () => {
+test('history keeps the three most recent distinct calculations and refreshes duplicates', async () => {
   const history = new AnalysisHistory(storage()), data = await demoAnalysis(sites[0]);
   const ids = [];
   for (let required = 1; required <= historyLimit + 2; required++) ids.push(history.save(data, { ...options, required }));
