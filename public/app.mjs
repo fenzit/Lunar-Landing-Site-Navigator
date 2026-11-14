@@ -3,7 +3,8 @@ import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
-import { horizonAt } from '/lib/terrain-math.mjs';
+import { elevationClearance } from "/lib/terrain-math.mjs";
+import { createVisibilityMap } from "./visibility-map.mjs";
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -34,6 +35,12 @@ let request, compareRequest;
 let required = 4, cursorUpdates = [], currentAngles;
 let sky, skyKey, skyRequest, skyError = false, globeTime;
 let statusMessage, sceneMessage;
+const visibilityMap = createVisibilityMap($("#visibility-map"), {
+  date,
+  loadPoint: (point, snapshot, signal) =>
+    getJson(periodAnalysisUrl(point, snapshot.analysis.period, snapshot.height), signal),
+  describeError: requestError,
+});
 
 function requestError(error) {
   if (!error.responseStatus) return t("requestFailed");
@@ -79,12 +86,16 @@ function periodParams(start, hours) {
   return new URLSearchParams({ start_utc: start, duration_hours: hours, step_minutes: 30 });
 }
 
-function queryUrl(lat, lon, start, hours) {
+function queryUrl(lat, lon, start, hours, height = field("receiver").value) {
   const params = periodParams(start, hours);
   params.set("lat_deg", lat);
   params.set("lon_east_deg", lon);
-  params.set('receiver_height_m',field('receiver').value);
+  params.set("receiver_height_m", height);
   return `/api/analysis?${params}`;
+}
+
+function periodAnalysisUrl(point, { start, end }, height) {
+  return queryUrl(point.lat, point.lon, new Date(start).toISOString().replace(".000", ""), (end - start) / hour, height);
 }
 
 function renderSky() {
@@ -151,6 +162,7 @@ function selectSite(next, kind, focus = true) {
   }
   $("#scene-calculate").hidden = !["custom", "random"].includes(kind);
   renderSite(focus);
+  updateVisibilityMap();
 }
 
 function resetAnalysis() {
@@ -172,6 +184,7 @@ function resetAnalysis() {
   $("#next").hidden = true;
   drawPlots();
   renderer?.setAngles(null);
+  updateVisibilityMap();
 }
 
 function fillPeriod() {
@@ -180,7 +193,8 @@ function fillPeriod() {
 }
 
 function updateSignal(name, el, az) {
-  const horizon=analysis?.terrain?horizonAt(analysis.terrain.horizon,az):0,clearance=el-horizon;
+  const clearance = elevationClearance(el, az, analysis.terrain?.horizon);
+  const horizon = el - clearance;
   $(`#${name}-signal`).classList.toggle("lost", clearance <= 0);
   $(`#${name}-detail`).textContent = `${angle(el)} · ${t(clearance>0?'terrainVisible':'terrainBlocked')}\n${t("azimuth")} ${az.toFixed(1)}° · ${t('localHorizon')} ${angle(horizon)}`;
 }
@@ -208,6 +222,14 @@ function renderTime() {
   for (const update of cursorUpdates) update(time);
   renderer?.setAngles(currentAngles);
   renderSky();
+  updateVisibilityMap();
+}
+
+function updateVisibilityMap() {
+  const analyzedSite = analysis?.site;
+  const matchesSite = analyzedSite && site?.lat === analyzedSite.lat && site?.lon === analyzedSite.lon;
+  const receiver = field("receiver");
+  visibilityMap.update(matchesSite ? analysis : null, currentAngles?.t, receiver.validity.valid ? receiver.valueAsNumber : NaN);
 }
 
 function drawPlots() {
@@ -374,14 +396,12 @@ async function compare() {
     return;
   }
   const other = config.sites.find(point => point.id !== site.id);
-  const { start, end } = analysis.period;
   const id = ++compareId;
   compareRequest = new AbortController();
   $("#compare").disabled = true;
   status("comparing", { name: other.name });
   try {
-    const data = await getJson(queryUrl(other.lat, other.lon, new Date(start).toISOString().replace(".000", ""),
-      (end - start) / hour), compareRequest.signal);
+    const data = await getJson(periodAnalysisUrl(other, analysis.period), compareRequest.signal);
     if (id !== compareId) return;
     comparison = { name: other.name, analysis: data };
     $("#compare").textContent = t("hideComparison");
@@ -429,6 +449,7 @@ async function init() {
     loadAnalysis(`/api/demo/${preset.id}?receiver_height_m=${field('receiver').value}`);
   });
   $("#compare").addEventListener("click", compare);
+  field("receiver").addEventListener("input", updateVisibilityMap);
   $("#next").addEventListener("click", () => {
     slider.value = (nextTime - analysis.period.start) / minute;
     renderTime();
@@ -500,6 +521,7 @@ function refreshLanguage() {
   renderer?.localize();
   drawPlots();
   renderSky();
+  visibilityMap.localize();
 }
 
 for (const button of document.querySelectorAll("[data-language]")) {
