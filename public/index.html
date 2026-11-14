@@ -58,6 +58,17 @@
             <button id="terrain-retry" type="button" data-i18n="terrainRetry" hidden>Retry terrain</button>
           </div>
         </div>
+        <div class="descent-tools" id="descent-tools" hidden>
+          <p data-i18n="descentIllustrative">Illustrative descent · touchdown lighting from JPL</p>
+          <div class="descent-actions">
+            <button id="descent-play" type="button" disabled>Play descent</button>
+            <input id="descent-time" type="range" min="0" step="any" value="0" aria-label="Descent playback time" data-i18n-label="descentTime" disabled>
+            <output id="descent-readout" for="descent-time"></output>
+            <button id="descent-recenter" type="button" data-i18n="descentRecenter" disabled>Recenter camera</button>
+            <button id="descent-exit" type="button" data-i18n="descentExit">Back to Surface View</button>
+          </div>
+          <small data-i18n="descentControls">Drag to look · WASD to fly · Q/E to descend/ascend · Shift to fly faster</small>
+        </div>
         <div class="scene-message" id="scene-message" role="status" hidden></div>
         <div id="main-plot" class="main-plot" hidden></div>
       </div>
@@ -147,9 +158,14 @@
       </form>
       <div class="analysis-actions">
         <button id="demo" type="button" data-i18n="demo">Open saved scenario</button>
+        <button id="odysseus-replay" type="button" data-i18n="odysseusReplay">Replay Odysseus landing</button>
         <button id="compare" type="button" disabled>Compare with another site</button>
         <button id="next" type="button" data-i18n="next" hidden>Go to next viable start</button>
       </div>
+      <p id="odysseus-replay-note" hidden>
+        <span id="odysseus-replay-caption"></span>
+        <a id="odysseus-replay-source">NASA/TM–20250010290</a>
+      </p>
       <p id="analysis-status" role="status"></p>
       <section class="visibility-map" id="visibility-map" aria-labelledby="visibility-map-title">
         <h3 id="visibility-map-title" data-i18n="mapTitle">Local visibility map</h3>

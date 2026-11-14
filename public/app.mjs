@@ -1,6 +1,6 @@
 import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs";
 import { apiErrorMessage } from "/lib/api-errors.mjs";
-import { maxPeriodHours } from "/lib/sites.mjs";
+import { maxPeriodHours, odysseusReplay, sites } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { elevationClearance } from "/lib/terrain-math.mjs";
@@ -16,6 +16,7 @@ const mobile = matchMedia("(max-width: 760px)");
 const viewInfo = {
   globe: ["CAM 01", "globeCaption"],
   ground: ["CAM 02", "groundCaption"],
+  descent: ["CAM 04", "descentCaption"],
   chart: ["CAM 03", "chartCaption"],
 };
 const sourceKeys = { demo: "saved", cache: "cached", live: "live" };
@@ -27,6 +28,8 @@ const duration = ms => {
   return ms > 0 && m === 0 ? `<1 ${t("minutes")}` : `${Math.floor(m / 60)} ${t("hours")} ${String(m % 60).padStart(2, "0")} ${t("minutes")}`;
 };
 const angle = n => `${n >= 0 ? "+" : "−"}${Math.abs(n).toFixed(2)}°`;
+const odysseus = sites.find(point => point.id === odysseusReplay.siteId);
+const touchdown = Date.parse(odysseusReplay.start);
 
 let config, site, analysis, comparison, renderer;
 let view = "chart", selection = "odysseus", frame = 0;
@@ -166,6 +169,7 @@ function selectSite(next, kind, focus = true) {
 }
 
 function resetAnalysis() {
+  if (view === "descent") showView("ground");
   stopPlayback();
   request?.abort();
   compareRequest?.abort();
@@ -182,14 +186,15 @@ function resetAnalysis() {
   $("#source").textContent = "JPL HORIZONS";
   $("#timeline-end").textContent = "UTC";
   $("#next").hidden = true;
+  $("#odysseus-replay-note").hidden = true;
   drawPlots();
   renderer?.setAngles(null);
   updateVisibilityMap();
 }
 
-function fillPeriod() {
-  field("start").value = config.demo.start.slice(0, 16);
-  field("hours").value = config.demo.hours;
+function fillPeriod({ start, hours } = config.demo) {
+  field("start").value = start.slice(0, 16);
+  field("hours").value = hours;
 }
 
 function updateSignal(name, el, az) {
@@ -244,6 +249,12 @@ function renderAnalysisText() {
   if (!analysis) return;
   const data = analysis;
   const { start, end, stepMinutes } = data.period;
+  const historical = data.site.lat === odysseus.lat && data.site.lon === odysseus.lon &&
+    start === touchdown && end - start === odysseusReplay.hours * hour;
+  $("#odysseus-replay-note").hidden = !historical;
+  if (historical) {
+    $("#odysseus-replay-caption").textContent = t("odysseusReplayCaption", { time: date(start), hours: odysseusReplay.hours });
+  }
   $("#source").replaceChildren("JPL HORIZONS", document.createElement("br"));
   const tag = document.createElement("span");
   tag.textContent = sourceName(data.source.mode);
@@ -297,6 +308,7 @@ async function loadAnalysis(url, keepTime = null) {
     for(const [key,value] of Object.entries(edits)) field(key).value=value;
     renderAnalysis(data, keepTime);
     status(sourceKeys[data.source.mode]);
+    return true;
   } catch (error) {
     if (id === requestId) statusRequestError(error);
   }
@@ -326,7 +338,10 @@ function pickSite(coords) {
 
 async function showView(next) {
   view = next;
-  $(".experience").dataset.view = view;
+  const experience = $(".experience");
+  experience.dataset.view = view === "descent" ? "ground" : view;
+  experience.classList.toggle("descent-mode", view === "descent");
+  $("#descent-tools").hidden = view !== "descent";
   $("#view-number").textContent = viewInfo[view][0];
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#main-plot").hidden = view !== "chart";
@@ -335,7 +350,7 @@ async function showView(next) {
   $("#surface-details").hidden = view !== "ground";
   renderSky();
   showSceneMessage(null);
-  for (const button of document.querySelectorAll("[data-view]")) {
+  for (const button of document.querySelectorAll("button[data-view]")) {
     button.setAttribute("aria-pressed", String(button.dataset.view === view));
   }
   if (view === "chart") {
@@ -353,11 +368,12 @@ async function showView(next) {
       renderSite(true);
       renderer.setAngles(currentAngles);
     }
-    renderer.show(view);
+    renderer.show(view, view === "descent" ? analysis.samples[0] : undefined);
     renderSky();
   } catch {
     showSceneMessage("no3d");
     $("#map-tools").hidden = $("#surface-details").hidden = true;
+    $("#descent-tools").hidden = true;
     $("#globe-source").hidden = true;
   }
 }
@@ -448,6 +464,21 @@ async function init() {
     selectSite(preset, preset.id);
     loadAnalysis(`/api/demo/${preset.id}?receiver_height_m=${field('receiver').value}`);
   });
+  $("#odysseus-replay-source").href = odysseus.url;
+  $("#odysseus-replay").addEventListener("click", async () => {
+    if (!field("required").reportValidity() || !field("receiver").reportValidity()) return;
+    selectSite(odysseus, odysseus.id);
+    fillPeriod(odysseusReplay);
+    if (await loadAnalysis(queryUrl(odysseus.lat, odysseus.lon, odysseusReplay.start, odysseusReplay.hours))) {
+      document.querySelector("#interface").scrollIntoView();
+      await showView("descent");
+      $("#viewport canvas")?.focus({ preventScroll: true });
+    }
+  });
+  $("#descent-exit").addEventListener("click", async () => {
+    await showView("ground");
+    $("#viewport canvas")?.focus({ preventScroll: true });
+  });
   $("#compare").addEventListener("click", compare);
   field("receiver").addEventListener("input", updateVisibilityMap);
   $("#next").addEventListener("click", () => {
@@ -468,7 +499,7 @@ async function init() {
     event.currentTarget.setAttribute("aria-expanded", String(open));
     $("#conditions-panel").classList.toggle("open", open);
   });
-  for (const button of document.querySelectorAll("[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
+  for (const button of document.querySelectorAll("button[data-view]")) button.addEventListener("click", () => showView(button.dataset.view));
   const surfaceDetailsToggle = $("#surface-details-toggle");
   const surfaceTools = $("#sky-tools");
   surfaceDetailsToggle.addEventListener("click", () => {
