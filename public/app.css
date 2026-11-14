@@ -156,6 +156,43 @@ html[lang=en] .intro h1 { font-size: clamp(34px, 3.8vw, 62px); letter-spacing: -
 .analysis-panel summary { cursor: pointer; }
 #analysis-status { min-height: 1.6em; color: #d2deca; }
 #detail-plot { max-width: 840px; }
+.analysis-history { margin: 28px 0 32px; }
+.analysis-history h3 { font-size: 20px; font-weight: 500; margin: 0 0 10px; }
+.analysis-history p { color: #c1caba; font-size: 14px; margin: 0 0 16px; max-width: 80ch; }
+#history-list { min-width: 0; }
+.saved-calculations { min-width: 940px !important; }
+.saved-calculations .calculation-cell { min-width: 230px; max-width: 270px; background: transparent; }
+.saved-calculations .calculation-cell b { font-size: 15px; font-weight: 500; }
+.saved-calculations .calculation-cell small { max-width: none; overflow-wrap: anywhere; }
+.saved-calculations tr[data-active=true] { background: #d9efad08; }
+.saved-calculations tr[data-active=true] .calculation-cell b { color: var(--green); }
+.saved-calculations .saved-window-value { min-height: 9em; }
+.saved-window-value + .saved-window-value { margin-top: 12px; padding-top: 12px; border-top: 1px solid var(--edge); }
+.history-open { margin-top: 12px; min-height: 44px; border: 1px solid var(--edge); border-radius: 4px; background: #0b100e; padding: 8px 12px; font: 14px/1.5 Inter,"Segoe UI",sans-serif; }
+.history-open[aria-pressed=true] { color: var(--green); border-color: #d9efad80; }
+.history-open:hover { background: #d9efad16; }
+.history-open:active { background: #d9efad24; }
+.history-open:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
+.visibility-windows { margin-top: 32px; }
+.visibility-windows h3 { font-size: 20px; font-weight: 500; margin: 0 0 12px; }
+.windows-note { color: #c1caba; max-width: 80ch; font-size: 14px; margin: 0 0 16px; }
+.windows-scroll { overflow-x: auto; border: 1px solid var(--edge); border-radius: 6px; }
+.windows-scroll table { width: 100%; min-width: 690px; border-collapse: collapse; text-align: left; }
+.windows-scroll th { font-size: 13px; font-weight: 500; color: #c1caba; background: #d9efad0b; }
+.windows-scroll th, .windows-scroll td { padding: 16px; vertical-align: top; border-bottom: 1px solid var(--edge); }
+.windows-scroll tr:last-child td { border-bottom: 0; }
+.windows-scroll td { font: 14px/1.6 var(--mono); }
+.windows-scroll time { white-space: nowrap; }
+.windows-scroll small { display: block; font: 13px/1.5 Inter, "Segoe UI", sans-serif; color: #c1caba; margin-top: 6px; max-width: 20ch; }
+.windows-scroll .window-clipped { color: #f2c675; }
+.window-short { color: #f0b58e; }
+.window-enough { color: var(--green); }
+.windows-scroll button { min-height: 44px; padding: 8px 12px; border: 1px solid #d9efad70; border-radius: 4px; background: #d9efad0b; color: var(--green); font: 14px/1.3 Inter, "Segoe UI", sans-serif; }
+.windows-scroll button:hover:enabled { background: #d9efad20; }
+.windows-scroll button:active:enabled { background: #d9efad30; }
+.windows-scroll button:disabled { opacity: .6; cursor: default; }
+.windows-empty { border: 1px solid var(--edge); padding: 20px; color: #c1caba; }
+.windows-scroll:focus-visible, .windows-scroll button:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 input:focus-visible, summary:focus-visible, canvas:focus-visible { outline: 2px solid var(--green); outline-offset: 3px; }
 
 @media (min-width: 761px) and (max-width: 1150px) {

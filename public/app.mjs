@@ -2,6 +2,8 @@ import { atTime, hour, landingResult, minute, skyAtTime } from "/lib/windows.mjs
 import { apiErrorMessage } from "/lib/api-errors.mjs";
 import { maxPeriodHours, odysseusReplay, sites } from "/lib/sites.mjs";
 import { drawChart } from "./chart.mjs";
+import { renderHistoryTable } from './window-table.mjs';
+import { AnalysisHistory, historyLimit } from './analysis-history.mjs';
 import { language, localizePage, setLanguage, t } from "./i18n.mjs";
 import { elevationClearance } from "/lib/terrain-math.mjs";
 import { createVisibilityMap } from "./visibility-map.mjs";
@@ -38,6 +40,10 @@ let request, compareRequest;
 let required = 4, cursorUpdates = [], currentAngles;
 let sky, skyKey, skyRequest, skyError = false, globeTime;
 let statusMessage, sceneMessage;
+let historyStorage;
+try { historyStorage = localStorage; } catch { /* Session history still works. */ }
+const analysisHistory = new AnalysisHistory(historyStorage);
+let activeHistoryId = null;
 const visibilityMap = createVisibilityMap($("#visibility-map"), {
   date,
   loadPoint: (point, snapshot, signal) =>
@@ -176,6 +182,9 @@ function resetAnalysis() {
   requestId++;
   compareId++;
   analysis = comparison = currentAngles = null;
+  activeHistoryId = null;
+  renderHistory();
+  renderWindows();
   $("#compare").textContent = t("compare");
   slider.disabled = $("#play").disabled = $("#reset").disabled = $("#compare").disabled = true;
   $("#sun-signal").classList.remove("lost");
@@ -245,7 +254,46 @@ function drawPlots() {
   renderTime();
 }
 
+function renderWindows() {
+  renderHistory();
+}
+
+function renderHistory() {
+  const container = $('#analysis-history');
+  container.hidden = analysisHistory.records.length === 0;
+  const list = $('#history-list');
+  $('#history-note').textContent = t(analysisHistory.persistent ? 'historyNote' : 'historySession', { count: historyLimit });
+  renderHistoryTable(list,analysisHistory.records,{
+    activeId:activeHistoryId,required,ready:Boolean(config),open:restoreHistory,
+    select:(id,offset)=>{
+      if(id!==activeHistoryId) restoreHistory(id);
+      stopPlayback();
+      slider.value=offset;
+      renderTime();
+      slider.focus();
+    },
+  });
+}
+
+function restoreHistory(id) {
+  const record = analysisHistory.get(id);
+  if (!record) return;
+  resetAnalysis(); // Also cancels a newer request before restoring its predecessor.
+  const data = record.analysis;
+  required = record.required;
+  field('required').value = required;
+  field('start').value = new Date(data.period.start).toISOString().slice(0, 16);
+  field('hours').value = (data.period.end - data.period.start) / hour;
+  field('receiver').value = data.terrain?.receiverHeight ?? 2;
+  selectSite({ ...record.site, lat: data.site.lat, lon: data.site.lon }, record.selection ?? 'custom', false);
+  activeHistoryId = id;
+  renderHistory();
+  renderAnalysis(data);
+  status('historyRestored');
+}
+
 function renderAnalysisText() {
+  renderWindows();
   if (!analysis) return;
   const data = analysis;
   const { start, end, stepMinutes } = data.period;
@@ -306,6 +354,8 @@ async function loadAnalysis(url, keepTime = null) {
     const edits=Object.fromEntries(['lat','lon'].filter(key=>field(key).value!==submitted[key]).map(key=>[key,field(key).value]));
     selectSite({ ...site, lat: data.site.lat, lon: data.site.lon }, selection, false);
     for(const [key,value] of Object.entries(edits)) field(key).value=value;
+    activeHistoryId = analysisHistory.save(data, { site, selection, required });
+    renderHistory();
     renderAnalysis(data, keepTime);
     status(sourceKeys[data.source.mode]);
     return true;
@@ -489,6 +539,7 @@ async function init() {
     if (!event.target.validity.valid) return;
     required = event.target.valueAsNumber;
     $("#required-display").textContent = required.toLocaleString(language);
+    renderWindows();
     drawPlots();
   });
   slider.addEventListener("input", () => { stopPlayback(); renderTime(); });
@@ -535,11 +586,13 @@ async function init() {
   window.addEventListener("resize", drawPlots);
   for(const input of form.elements) input.disabled=false;
   showView("globe");
-  await loadAnalysis("/api/demo/odysseus");
+  if (analysisHistory.records.length) restoreHistory(analysisHistory.records[0].id);
+  else await loadAnalysis("/api/demo/odysseus");
 }
 
 function refreshLanguage() {
   localizePage();
+  renderHistory();
   $("#view-label").textContent = t(viewInfo[view][1]);
   $("#play span").textContent = t(frame ? "pause" : "play");
   $("#compare").textContent = t(comparison ? "hideComparison" : "compare");
