@@ -2,7 +2,7 @@ import { createServer } from "node:http";
 import { readFile } from "node:fs/promises";
 import { extname, resolve, sep } from "node:path";
 import { AnalysisError, getAnalysis, getSky, normalizeCoordinates, normalizePeriod, normalizeQuery } from "./lib/horizons.mjs";
-import { applyTerrain, getTerrain } from './lib/terrain.mjs';
+import { applyTerrain, getSurface, getTerrain } from './lib/terrain.mjs';
 import './lib/config.mjs';
 import { demoHours, demoStart, demoStep, sites } from "./lib/sites.mjs";
 import { apiErrorMessage } from "./lib/api-errors.mjs";
@@ -44,7 +44,8 @@ const server = createServer(async (req, res) => {
       return json(res,applyTerrain(data,terrain));
     }
     if(path==='/api/terrain') {
-      return json(res,await getTerrain(normalizeCoordinates(url.searchParams),Number(url.searchParams.get('receiver_height_m')??2)));
+      const site=normalizeCoordinates(url.searchParams),detail=url.searchParams.get('detail');
+      return json(res,detail?await getSurface(site,detail):await getTerrain(site,Number(url.searchParams.get('receiver_height_m')??2)));
     }
     if (path === "/api/sky") {
       return json(res, await getSky(normalizePeriod(url.searchParams), { offline }));

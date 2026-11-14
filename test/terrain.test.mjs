@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { clearanceSamples, destination, gridHeight, horizonAt, moonRadius, terrainAngle } from '../lib/terrain-math.mjs';
+import { clearanceSamples, destination, gridHeight, horizonAt, moonRadius, terrainAngle, terrainLookout } from '../lib/terrain-math.mjs';
 import { applyTerrain } from '../lib/terrain.mjs';
 import { horizonsUrl, normalizeCoordinates } from '../lib/horizons.mjs';
 
@@ -60,4 +60,16 @@ test('walking coordinates remain finite at both exact poles and wrap longitude',
 test('JPL observer altitude uses DEM elevation plus equipment height',()=>{
   const url=horizonsUrl({lat:-80,lon:1,start:Date.UTC(2026,10,14),end:Date.UTC(2026,10,15),step:30,altitudeKm:2.583568},'sun');
   assert.equal(url.searchParams.get('SITE_COORD'),"'1,-80,2.583568'");
+});
+
+test('scenic viewpoint stands on measured higher ground and faces a real depression',()=>{
+  const size=65,step=20,heights=[];
+  for(let y=0;y<size;y++) for(let x=0;x<size;x++) {
+    const d=Math.hypot((x-32)*step,(y-32)*step);heights.push(d<180?-90*(1-d/180):0);
+  }
+  const grid={size,step,heights},point=terrainLookout(grid);
+  assert.ok(point&&point.drop>50);
+  assert.ok(gridHeight(grid,point.east,point.north)>-20);
+  assert.ok(point.pitch<0);
+  assert.equal(terrainLookout({...grid,heights:heights.map(()=>0)}),null);
 });

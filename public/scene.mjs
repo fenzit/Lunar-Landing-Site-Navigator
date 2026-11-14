@@ -7,6 +7,7 @@ import { moonMaterial } from "./moon-material.mjs";
 import { createSun } from "./sun.mjs";
 import { t } from "./i18n.mjs";
 import { createSurface } from './surface.mjs';
+import { createLander } from './lander.mjs';
 
 const rad = Math.PI / 180;
 const relief = 3;
@@ -99,41 +100,16 @@ function makeGround() {
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(62, 1, .1, 400000);
   camera.position.set(0, 1.7, 0);
-  scene.add(new THREE.HemisphereLight(0xd8dfeb, 0x34302b, .65));
+  scene.add(new THREE.HemisphereLight(0xd8dfeb, 0x686359, .95));
   const light = new THREE.DirectionalLight(0xfff4de, 3.1);
+  light.position.set(8,10,6);
   light.castShadow=true;light.shadow.mapSize.set(2048,2048);
   Object.assign(light.shadow.camera,{left:-90,right:90,top:90,bottom:-90,near:1,far:4500});
   light.shadow.normalBias=.12;light.shadow.bias=-.00002;
   scene.add(light,light.target);
 
-  const lander = new THREE.Group();
-  const foil = new THREE.MeshStandardMaterial({ color: 0x998058, metalness: .23, roughness: .65 });
-  const frame = new THREE.MeshStandardMaterial({ color: 0x9ca39c, metalness: .32 });
-  const body = new THREE.Mesh(new THREE.CylinderGeometry(.6, .73, .88, 6), foil);
-  body.position.y = .87;
-  lander.add(body);
-  for (let i = 0; i < 4; i++) {
-    const theta = Math.PI / 4 + i * Math.PI / 2;
-    const foot = new THREE.Vector3(1.03 * Math.cos(theta), .06, 1.03 * Math.sin(theta));
-    const joint = new THREE.Vector3(.42 * Math.cos(theta), .83, .42 * Math.sin(theta));
-    const leg = new THREE.Mesh(new THREE.CylinderGeometry(.035, .035, joint.distanceTo(foot), 6), frame);
-    leg.position.copy(foot).lerp(joint, .5);
-    leg.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), joint.sub(foot).normalize());
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(.16, .17, .07, 8), frame);
-    pad.position.copy(foot);
-    lander.add(leg, pad);
-  }
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(.033, .033, .4, 6), frame);
-  mast.position.y = 1.44;
-  lander.add(mast);
-  const dish = new THREE.Mesh(new THREE.ConeGeometry(.23, .13, 10), foil);
-  dish.position.y = 1.69;
-  dish.rotation.z = .35;
-  lander.add(dish);
+  const lander = createLander();
   scene.add(lander);
-
-  lander.traverse(child=>{if(child.isMesh) child.castShadow=child.receiveShadow=true;});
-  lander.visible=false;
   const solar = createSun(462);
   const objects = {
     sun: solar.mesh,
@@ -171,7 +147,7 @@ export function createScene(root, { pick, message, moved }) {
   const axis = new THREE.Vector3(0, 1, 0);
   const markerWorld = new THREE.Vector3();
   const ground = makeGround();
-  const surfaceView=createSurface(ground,canvas,{message:key=>{if(view==='ground') message(key);},draw:()=>{if(view==='ground') render();},moved});
+  const surfaceView=createSurface(ground,canvas,{message:key=>{if(view==='ground') message(key);},draw:()=>{if(view==='ground') render();},aim:(az,el)=>{faceTarget=null;yaw=az;pitch=el;},moved});
   const textureLoader = new THREE.TextureLoader();
   const labels = sites.map(site => makeLabel(root, site.name, "map-label"));
   const pickedLabel = makeLabel(root, "", "map-label");
@@ -455,7 +431,7 @@ export function createScene(root, { pick, message, moved }) {
     } else if (view === "ground" && ["ArrowLeft", "ArrowRight", "ArrowUp", "ArrowDown"].includes(event.key)) {
       faceTarget = null;
       yaw += event.key === "ArrowLeft" ? -9 : event.key === "ArrowRight" ? 9 : 0;
-      pitch = THREE.MathUtils.clamp(pitch + (event.key === "ArrowUp" ? 6 : event.key === "ArrowDown" ? -6 : 0), -23, 75);
+      pitch = THREE.MathUtils.clamp(pitch + (event.key === "ArrowUp" ? 6 : event.key === "ArrowDown" ? -6 : 0), -85, 85);
       render();
     } else return;
     event.preventDefault();
