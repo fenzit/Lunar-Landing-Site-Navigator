@@ -44,6 +44,13 @@ export function createSun(radius) {
     transparent: true, depthWrite: false, toneMapped: false,
   }));
   corona.scale.setScalar(radius * 5.5);
+  const viewPosition = new THREE.Vector3();
+  corona.onBeforeRender = (_renderer, _scene, camera) => {
+    viewPosition.setFromMatrixPosition(mesh.matrixWorld).applyMatrix4(camera.matrixWorldInverse);
+    // An animated Sun can cross the camera plane. Its billboard would then
+    // cover the viewport, so fade the decorative halo before it gets that close.
+    corona.material.opacity = THREE.MathUtils.smoothstep(-viewPosition.z, radius * 2, radius * 4);
+  };
   mesh.add(corona);
   return { mesh, update(seconds) { time.value = seconds; } };
 }

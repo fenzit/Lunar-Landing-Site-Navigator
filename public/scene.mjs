@@ -165,6 +165,7 @@ export function createScene(root, { pick, message, moved }) {
   let globe, surface, slopeMap, loading, selected, angles, sky, view = "chart";
   let descentAngles;
   let frame = 0, yaw = 0, pitch = 0, faceTarget = null, slopeEnabled = false;
+  let inViewport = true, updatingOrbit = false;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let animated = !reducedMotion.matches, seconds = 0, lastFrame = 0, flight = null, focusBody = "system";
   const systemCenter = new THREE.Vector3();
@@ -262,7 +263,7 @@ export function createScene(root, { pick, message, moved }) {
   }
 
   function render() {
-    if (view === "chart") return;
+    if (view === "chart" || !inViewport || document.hidden) return;
     const width = root.clientWidth, height = root.clientHeight;
     if (!width || !height) return;
     const aspect = width / height;
@@ -299,7 +300,19 @@ export function createScene(root, { pick, message, moved }) {
     render();
   }
   new ResizeObserver(resize).observe(root);
-  controls.addEventListener("change", render);
+  controls.addEventListener("change", () => { if (!updatingOrbit) render(); });
+  new IntersectionObserver(([entry]) => {
+    if (inViewport === entry.isIntersecting) return;
+    inViewport = entry.isIntersecting;
+    lastFrame = 0;
+    if (!inViewport) {
+      if (frame) cancelAnimationFrame(frame);
+      frame = 0;
+      return;
+    }
+    render();
+    startAnimation();
+  }).observe(root);
 
   function updateBodies() {
     lunarFrame.rotation.y = seconds * .018;
@@ -325,7 +338,7 @@ export function createScene(root, { pick, message, moved }) {
 
   function animate(now = performance.now()) {
     frame = 0;
-    if (view === "chart" || document.hidden) { lastFrame = 0; return; }
+    if (view === "chart" || !inViewport || document.hidden) { lastFrame = 0; return; }
     const dt = lastFrame ? Math.min((now-lastFrame)/1000, .05) : 0;
     lastFrame = now;
     if (animated) seconds += dt;
@@ -337,14 +350,18 @@ export function createScene(root, { pick, message, moved }) {
       controls.target.lerpVectors(flight.fromTarget, flight.target, ease);
       if (t === 1) flight = null;
     }
-    if(view==='globe') controls.update(dt);
+    if (view === "globe") {
+      // OrbitControls emits "change" here; this frame already renders below.
+      updatingOrbit = true;
+      try { controls.update(dt); } finally { updatingOrbit = false; }
+    }
     if(view==="descent") descent.advance(dt);
     render();
     if (animated || (view==="descent" && descent.moving()) || (view==='globe'&&(controls.autoRotate || flight))) frame = requestAnimationFrame(animate);
     else lastFrame = 0;
   }
 
-  function startAnimation() { if (!frame && view !== "chart" && !document.hidden) frame = requestAnimationFrame(animate); }
+  function startAnimation() { if (!frame && inViewport && view !== "chart" && !document.hidden) frame = requestAnimationFrame(animate); }
   function focus(key, smooth = true) {
     focusBody = key;
     const target = key === "system" || key === "moon" ? new THREE.Vector3() : bodies[key].mesh.position.clone();
