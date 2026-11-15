@@ -10,6 +10,7 @@ import { createVisibilityMap } from "./visibility-map.mjs";
 import { createStartSearch } from './start-search.mjs';
 import { createSiteComparison } from './site-comparison.mjs';
 import { createPresetBrowser } from './preset-browser.mjs';
+import { createTimelinePlayback } from './timeline-playback.mjs';
 
 const $ = selector => document.querySelector(selector);
 const form = $("#analysis-form");
@@ -491,11 +492,10 @@ function play() {
   if (frame) return stopPlayback();
   if (slider.value === slider.max) slider.value = 0;
   const from = Number(slider.value), to = Number(slider.max);
-  const started = performance.now();
+  const playback = createTimelinePlayback(from, to, performance.now());
   $("#play span").textContent = t("pause");
   function tick(now) {
-    const fraction = Math.min(1, (now - started) / 20000);
-    const minuteIndex = Math.round(from + (to - from) * fraction);
+    const { fraction, minuteIndex } = playback(now);
     const shown = reducedMotion.matches && fraction < 1 ? from + Math.floor((minuteIndex - from) / 60) * 60 : minuteIndex;
     if (Number(slider.value) !== shown) {
       slider.value = shown;
