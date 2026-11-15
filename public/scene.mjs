@@ -5,6 +5,7 @@ import { heightAt, moonCoordinates, moonDirection, skyDirection } from "/lib/geo
 import { sites } from "/lib/sites.mjs";
 import { moonMaterial } from "./moon-material.mjs";
 import { createSun } from "./sun.mjs";
+import { overviewPositions } from "./overview-orbits.mjs";
 import { t } from "./i18n.mjs";
 import { createSurface } from './surface.mjs';
 import { createLander, landerOccludes } from './lander.mjs';
@@ -13,7 +14,6 @@ import { createDescent } from "./descent.mjs";
 const rad = Math.PI / 180;
 const relief = 3;
 const referenceKm = 1737.4;
-const bodyDistances = { sun: 52, earth: 17 };
 const vector = values => new THREE.Vector3(...values);
 const makeLabel = (root, text, className = "") => {
   const label = document.createElement("span");
@@ -65,16 +65,16 @@ function makeGlobeBodies(world, root) {
   }));
 }
 
-function labelGlobeBody(body, name, camera) {
+function labelGlobeBody(body, name, camera, moonCenter) {
   const { mesh, label } = body;
   label.hidden = !mesh.visible;
   if (label.hidden) return;
   const projected = mesh.position.clone().project(camera);
   const local = mesh.position.clone().applyMatrix4(camera.matrixWorldInverse);
   const ray = mesh.position.clone().sub(camera.position);
-  const fraction = -camera.position.dot(ray) / ray.lengthSq();
+  const fraction = moonCenter.clone().sub(camera.position).dot(ray) / ray.lengthSq();
   const occulted = fraction > 0 && fraction < 1 &&
-    camera.position.clone().addScaledVector(ray, fraction).lengthSq() < 1;
+    camera.position.clone().addScaledVector(ray, fraction).distanceToSquared(moonCenter) < 1;
   const inFrame = local.z < 0 && Math.abs(projected.x) < .95 && Math.abs(projected.y) < .84;
   if (occulted && inFrame) {
     label.hidden = true;
@@ -140,7 +140,7 @@ export function createScene(root, { pick, message, moved }) {
   const light = new THREE.DirectionalLight(0xfff5e5, 2.65);
   light.position.set(-2, 3, 4);
   const fill = new THREE.AmbientLight(0xcad9fa, .58);
-  world.add(light, fill);
+  world.add(light, light.target, fill);
   const bodies = makeGlobeBodies(world, root);
   const lunarFrame = new THREE.Group();
   world.add(lunarFrame);
@@ -168,7 +168,6 @@ export function createScene(root, { pick, message, moved }) {
   let inViewport = true, updatingOrbit = false;
   const reducedMotion = matchMedia("(prefers-reduced-motion: reduce)");
   let animated = !reducedMotion.matches, seconds = 0, lastFrame = 0, flight = null, focusBody = "system";
-  const systemCenter = new THREE.Vector3();
   const starsGeometry = new THREE.BufferGeometry();
   const starsPositions = [];
   let starSeed = 73;
@@ -187,7 +186,7 @@ export function createScene(root, { pick, message, moved }) {
     if (!globe) return direction;
     const worldDirection = direction.clone().applyQuaternion(spin);
     lunarFrame.updateMatrixWorld(true);
-    ray.set(worldDirection.clone().multiplyScalar(2), worldDirection.clone().negate());
+    ray.set(worldDirection.clone().multiplyScalar(2).add(lunarFrame.position), worldDirection.clone().negate());
     const surface = ray.intersectObject(globe)[0];
     return surface ? lunarFrame.worldToLocal(surface.point).addScaledVector(direction, .012) : direction.multiplyScalar(1.02);
   }
@@ -272,16 +271,18 @@ export function createScene(root, { pick, message, moved }) {
     currentCamera.updateProjectionMatrix();
     if (view === "globe") {
       renderer.render(world, camera);
-      projectedLabel(moonLabel, new THREE.Vector3(0, 1.5, 0), camera, Boolean(globe) && focusBody === "system");
+      projectedLabel(moonLabel, lunarFrame.position.clone().add(new THREE.Vector3(0, 1.5, 0)), camera, Boolean(globe) && focusBody === "system");
       for (const pin of pins) {
         const marker = pin.mesh;
         if (marker) {
           marker.getWorldPosition(markerWorld);
-          const visible = marker.visible && markerWorld.dot(camera.position) > markerWorld.lengthSq();
+          const relativeMarker = markerWorld.clone().sub(lunarFrame.position);
+          const relativeCamera = camera.position.clone().sub(lunarFrame.position);
+          const visible = marker.visible && relativeMarker.dot(relativeCamera) > relativeMarker.lengthSq();
           projectedLabel(pin.label, markerWorld, camera, visible);
         }
       }
-      for (const [key, body] of Object.entries(bodies)) labelGlobeBody(body, t(key), camera);
+      for (const [key, body] of Object.entries(bodies)) labelGlobeBody(body, t(key), camera, lunarFrame.position);
     } else {
       updateGround();
       ground.updateSun(seconds);
@@ -321,17 +322,21 @@ export function createScene(root, { pick, message, moved }) {
     bodies.sun.mesh.rotation.y = seconds * .055;
     bodies.sun.mesh.userData.update(seconds);
     if (sky) {
+      const positions = overviewPositions(sky, lunarFrame.rotation.y);
+      lunarFrame.position.fromArray(positions.moon);
       for (const [key, { mesh }] of Object.entries(bodies)) {
-        mesh.position.copy(vector(moonDirection(sky[`${key}Lat`], sky[`${key}Lon`]))).applyQuaternion(spin).multiplyScalar(bodyDistances[key]);
+        mesh.position.fromArray(positions[key]);
       }
       light.position.copy(bodies.sun.mesh.position);
+      light.target.position.copy(lunarFrame.position);
+    } else {
+      lunarFrame.position.set(0,0,0);
+      light.position.set(-2,3,4);
+      light.target.position.set(0,0,0);
     }
-    if (focusBody !== "system" && focusBody !== "moon" && !flight) {
-      const delta = bodies[focusBody].mesh.position.clone().sub(controls.target);
-      controls.target.add(delta); camera.position.add(delta);
-    }
-    if (focusBody === "system" && !flight) {
-      const delta = systemCenter.clone().applyQuaternion(spin).sub(controls.target);
+    if (focusBody !== "system" && !flight) {
+      const target = focusBody === "moon" ? lunarFrame.position : bodies[focusBody].mesh.position;
+      const delta = target.clone().sub(controls.target);
       controls.target.add(delta); camera.position.add(delta);
     }
   }
@@ -364,30 +369,26 @@ export function createScene(root, { pick, message, moved }) {
   function startAnimation() { if (!frame && inViewport && view !== "chart" && !document.hidden) frame = requestAnimationFrame(animate); }
   function focus(key, smooth = true) {
     focusBody = key;
-    const target = key === "system" || key === "moon" ? new THREE.Vector3() : bodies[key].mesh.position.clone();
+    const target = key === "moon" ? lunarFrame.position.clone() : bodies[key === "system" ? "sun" : key].mesh.position.clone();
     const aspect = root.clientWidth / Math.max(1, root.clientHeight);
     const radius = key === "sun" ? 9 : key === "earth" ? 3.67 : 1;
     let distance = Math.max(radius*3.8, radius*3.5/Math.max(aspect,.5));
     if (key === "system") {
-      const box = new THREE.Box3(new THREE.Vector3(-1,-1,-1), new THREE.Vector3(1,1,1));
+      let radius = lunarFrame.position.distanceTo(target) + 1;
       for (const [name, body] of Object.entries(bodies)) {
         if (!body.mesh.visible) continue;
         const r = name === "sun" ? 9 : 3.67;
-        box.expandByPoint(body.mesh.position.clone().addScalar(r));
-        box.expandByPoint(body.mesh.position.clone().addScalar(-r));
+        radius = Math.max(radius, body.mesh.position.distanceTo(target) + r);
       }
-      const bounds = box.getBoundingSphere(new THREE.Sphere());
-      target.copy(bounds.center);
-      systemCenter.copy(target).applyQuaternion(spin.clone().invert());
       const halfFov = Math.min(camera.fov*rad/2, Math.atan(Math.tan(camera.fov*rad/2)*aspect));
-      distance = bounds.radius / Math.sin(halfFov) * 1.12;
+      distance = radius / Math.sin(halfFov) * 1.12;
     }
     let direction = camera.position.clone().sub(controls.target).normalize();
     if (key === "system" && sky) {
-      direction.copy(bodies.sun.mesh.position).normalize().add(new THREE.Vector3(0,.4,1)).normalize();
+      direction.copy(bodies.sun.mesh.position).sub(lunarFrame.position).normalize().add(new THREE.Vector3(0,.4,1)).normalize();
     }
     const to = target.clone().addScaledVector(direction, distance);
-    controls.minDistance = key === "system" ? 2 : radius * 1.18;
+    controls.minDistance = (key === "system" && bodies.sun.mesh.visible ? 9 : radius) * 1.18;
     flight = { start: performance.now(), from: camera.position.clone(), fromTarget: controls.target.clone(), to, target };
     if (!smooth || reducedMotion.matches) { camera.position.copy(to); controls.target.copy(target); flight = null; controls.update(); render(); }
     startAnimation();
@@ -494,10 +495,10 @@ export function createScene(root, { pick, message, moved }) {
       pins.at(-1).site = site;
       pickedLabel.textContent = site.name;
       if (focus && focusBody === "moon") {
-        const distance = Math.max(3.45, camera.position.length());
+        const distance = Math.max(3.45, camera.position.distanceTo(lunarFrame.position));
         const lat = site.lat * .82;
-        camera.position.copy(vector(moonDirection(lat, site.lon)).applyQuaternion(spin).multiplyScalar(Math.min(distance, 5)));
-        controls.target.set(0,0,0);
+        camera.position.copy(vector(moonDirection(lat, site.lon)).applyQuaternion(spin).multiplyScalar(Math.min(distance, 5))).add(lunarFrame.position);
+        controls.target.copy(lunarFrame.position);
         controls.update();
       }
       positionPins();
@@ -520,10 +521,7 @@ export function createScene(root, { pick, message, moved }) {
       sky = value;
       for (const [key, { mesh }] of Object.entries(bodies)) {
         mesh.visible = Boolean(sky);
-        if (sky) mesh.position.copy(vector(moonDirection(sky[`${key}Lat`], sky[`${key}Lon`]))).applyQuaternion(spin).multiplyScalar(bodyDistances[key]);
       }
-      // Directional light uses the true angular direction, independent of the display orbit.
-      light.position.copy(sky ? bodies.sun.mesh.position : new THREE.Vector3(-2, 3, 4));
       fill.intensity = sky ? .3 : .58;
       updateBodies();
       if (!hadSky && sky && focusBody === "system") focus("system", false);

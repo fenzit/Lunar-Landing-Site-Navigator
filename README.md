@@ -34,7 +34,7 @@ These are LunarPilot results from saved real JPL responses and DEM inputs under 
 
 | Tool | What it provides |
 | --- | --- |
-| **Globe and UTC timeline** | Select a lunar point, explore the Sun and Earth, inspect directions at a chosen date, and toggle the SLDEM2015 slope overlay. Overview LOLA relief is exaggerated by a factor of three. |
+| **Globe and UTC timeline** | Select a lunar point, explore the Sun and Earth, inspect directions at a chosen date, and toggle the SLDEM2015 slope overlay. The whole-system animation keeps the Sun fixed at the center; displayed speeds and distances are illustrative, while Moon-relative JPL directions are preserved. Overview LOLA relief is exaggerated by a factor of three. |
 | **Chart and windows** | Sun/Earth clearance above terrain, shared intervals, time remaining in the current window, and the next viable start. Analyze up to 30 days; the main analysis form uses a 30-minute ephemeris step. |
 | **Landing-time search** | First and last viable starts in each window over a UTC range. Sort by earliest start or window duration. |
 | **A/B comparison** | Any two sites entered by coordinates or picked on the globe. Shared UTC range, ephemeris step, equipment height, and operation duration; a first viable start, operation margin, and model version for each site. |

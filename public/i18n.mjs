@@ -140,7 +140,7 @@ const messages = {
   wholeSystem: ["Whole system", "Вся система"],
   toMoon: ["To Moon", "К Луне"],
   animateBodies: ["Animate bodies", "Анимация тел"],
-  animationNote: ["Illustrative rotation · speeds not to scale", "Обзорное вращение · скорости условные"],
+  animationNote: ["Sun-centered overview · speeds and distances not to scale", "Солнце в центре обзора · скорости и расстояния условные"],
   title: ["LunarPilot — Lunar Landing Navigator", "LunarPilot — навигатор посадки"],
   brand: ["LunarPilot, main screen", "LunarPilot, интерфейс"],
   language: ["Interface language", "Язык интерфейса"],
