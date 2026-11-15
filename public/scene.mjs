@@ -297,7 +297,6 @@ export function createScene(root, { pick, message, moved }) {
   function resize() {
     if (!root.clientWidth || !root.clientHeight) return;
     renderer.setSize(root.clientWidth, root.clientHeight, false);
-    if (focusBody === "system" && view === "globe") focus("system", false);
     render();
   }
   new ResizeObserver(resize).observe(root);
@@ -315,7 +314,12 @@ export function createScene(root, { pick, message, moved }) {
     startAnimation();
   }).observe(root);
 
+  function focusTarget(key = focusBody) {
+    return key === "moon" ? lunarFrame.position : bodies[key === "system" ? "sun" : key].mesh.position;
+  }
+
   function updateBodies() {
+    const previousTarget = focusBody === "system" ? null : focusTarget().clone();
     lunarFrame.rotation.y = seconds * .018;
     spin.setFromAxisAngle(axis, lunarFrame.rotation.y);
     bodies.earth.mesh.rotation.y = seconds * .18;
@@ -334,9 +338,8 @@ export function createScene(root, { pick, message, moved }) {
       light.position.set(-2,3,4);
       light.target.position.set(0,0,0);
     }
-    if (focusBody !== "system" && !flight) {
-      const target = focusBody === "moon" ? lunarFrame.position : bodies[focusBody].mesh.position;
-      const delta = target.clone().sub(controls.target);
+    if (previousTarget && !flight) {
+      const delta = focusTarget().clone().sub(previousTarget);
       controls.target.add(delta); camera.position.add(delta);
     }
   }
@@ -349,6 +352,10 @@ export function createScene(root, { pick, message, moved }) {
     if (animated) seconds += dt;
     if(view==='globe') updateBodies();
     if (flight) {
+      // Keep the destination attached to the body while UTC playback moves it.
+      const delta = focusTarget().clone().sub(flight.target);
+      flight.target.add(delta);
+      flight.to.add(delta);
       const t = reducedMotion.matches ? 1 : Math.min(1, (now-flight.start)/850);
       const ease = t*t*(3-2*t);
       camera.position.lerpVectors(flight.from, flight.to, ease);
@@ -369,7 +376,7 @@ export function createScene(root, { pick, message, moved }) {
   function startAnimation() { if (!frame && inViewport && view !== "chart" && !document.hidden) frame = requestAnimationFrame(animate); }
   function focus(key, smooth = true) {
     focusBody = key;
-    const target = key === "moon" ? lunarFrame.position.clone() : bodies[key === "system" ? "sun" : key].mesh.position.clone();
+    const target = focusTarget(key).clone();
     const aspect = root.clientWidth / Math.max(1, root.clientHeight);
     const radius = key === "sun" ? 9 : key === "earth" ? 3.67 : 1;
     let distance = Math.max(radius*3.8, radius*3.5/Math.max(aspect,.5));
